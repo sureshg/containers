@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  svc0:
+    build:
+      context: .
+      target: openjdk
+      args:
+        JAVA_VERSION: 17
+    platform: x86-64
+    working_dir: /app
+    volumes:
+      - ./:/app:rw
+    command: [ "java", "App.java", "${SERVICE:-svc0}" ]
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+  svc1:
+    build:
+      context: .
+      target: openjdk
+      args:
+        JAVA_VERSION: 17
+    platform: arm64
+    working_dir: /app
+    volumes:
+      - ./:/app:rw
+    command: [ "java", "App.java", "${SERVICE:-svc1}" ]
+    ports:
+      - "8081:80"
+    networks:
+      - app-network
+    depends_on:
+      - svc0
+
+  db:
+    container_name: postgres
+    image: postgres:14-alpine
+    restart: always
+    env_file:
+      - env/dev.env
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    environment:
+      POSTGRES_USER: pgadmin
+      POSTGRES_PASSWORD: pgadmin
+      POSTGRES_DB: dev
+
+  db-admin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:6
+    restart: always
+    volumes:
+      - ./config/servers.json:/pgadmin4/servers.json
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - app-network
+    ports:
+      - "8088:80"
+    env_file:
+      - ./env/pgadmin.env
+    depends_on:
+      - db
+
+volumes:
+  pg-data:
+  pgadmin-data:
+
+networks:
+  app-network:

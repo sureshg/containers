@@ -4,10 +4,10 @@
       "Name": "Dev",
       "Group": "Servers",
       "Port": 5432,
-      "Username": "pgadmin",
+      "Username": "postgres",
       "Host": "db",
       "SSLMode": "prefer",
-      "MaintenanceDB": "dev"
+      "MaintenanceDB": "test-db"
     }
   }
 }

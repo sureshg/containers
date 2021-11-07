@@ -41,30 +41,41 @@ services:
     container_name: postgres
     image: postgres:14-alpine
     restart: always
-    env_file:
-      - env/dev.env
+    env_file: env/dev.env
     volumes:
       - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - app-network
-    environment:
-      POSTGRES_USER: pgadmin
-      POSTGRES_PASSWORD: pgadmin
-      POSTGRES_DB: dev
 
   db-admin:
     container_name: pgadmin
     image: dpage/pgadmin4:6
     restart: always
+    env_file: env/pgadmin.env
     volumes:
       - ./config/servers.json:/pgadmin4/servers.json
       - pgadmin-data:/var/lib/pgadmin
     networks:
       - app-network
     ports:
-      - "8088:80"
-    env_file:
-      - ./env/pgadmin.env
+      - "8089:8089"
+    depends_on:
+      - db
+
+  db-files:
+    container_name: pgdata-files
+    image: openjdk:18-slim
+    restart: always
+    volumes:
+      - pg-data:/data/pg
+      - pgadmin-data:/data/pgadmin
+    ports:
+      - "8090:8090"
+    networks:
+      - app-network
+    command: [ "java", "-m", "jdk.httpserver", "-b", "0.0.0.0", "-p", "8090","-d", "/data" ]
     depends_on:
       - db
 

@@ -1,41 +1,54 @@
 version: "3.8"
 
 services:
-  svc0:
+  svc1:
+    container_name: svc1
     build:
       context: .
       target: openjdk
       args:
-        JAVA_VERSION: 17
+        JDK_VERSION: 17
     platform: x86-64
     working_dir: /app
     volumes:
-      - ./:/app:rw
-    command: [ "java", "App.java", "${SERVICE:-svc0}" ]
+      - ./:/src:rw
+      - app-data:/data
+    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE:-svc1}" ]
     ports:
       - "8080:80"
     networks:
       - app-network
     depends_on:
       - db
+      #    privileged: false
+      #    ulimits:
+      #      nproc: 65535
+      #      nofile:
+      #        soft: 65535
+      #        hard: 65535
+      #    tmpfs:
+      #      - /run
+      #      - /var/run
 
-  svc1:
+  svc2:
+    container_name: svc2
     build:
       context: .
       target: openjdk
       args:
-        JAVA_VERSION: 17
+        JDK_VERSION: 17
     platform: arm64
     working_dir: /app
     volumes:
-      - ./:/app:rw
-    command: [ "java", "App.java", "${SERVICE:-svc1}" ]
+      - ./:/src:rw
+      - app-data:/data
+    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE:-svc2}" ]
     ports:
       - "8081:80"
     networks:
       - app-network
     depends_on:
-      - svc0
+      - db
 
   db:
     container_name: postgres
@@ -71,17 +84,19 @@ services:
     volumes:
       - pg-data:/data/pg
       - pgadmin-data:/data/pgadmin
+      - app-data:/data/app
     ports:
-      - "8090:8090"
+      - "8000:8000"
     networks:
       - app-network
-    command: [ "java", "-m", "jdk.httpserver", "-b", "0.0.0.0", "-p", "8090","-d", "/data" ]
+    command: [ "java", "-m", "jdk.httpserver", "-b", "0.0.0.0", "-d", "/data" ]
     depends_on:
       - db
 
 volumes:
   pg-data:
   pgadmin-data:
+  app-data:
 
 networks:
   app-network:

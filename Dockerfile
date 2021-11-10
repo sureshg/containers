@@ -22,7 +22,7 @@ RUN mkdir /app
 WORKDIR /app
 COPY App.java /app/App.java
 
-# Create the aapplication jar
+# Create the application jar
 RUN javac *.java \
     && jar cfe app.jar App *.class
 

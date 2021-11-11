@@ -9,6 +9,7 @@ services:
       args:
         JDK_VERSION: 17
     platform: x86-64
+    restart: always
     working_dir: /app
     volumes:
       - ./:/src:rw
@@ -38,6 +39,7 @@ services:
       args:
         JDK_VERSION: 17
     platform: arm64
+    restart: always
     working_dir: /app
     volumes:
       - ./:/src:rw
@@ -92,6 +94,23 @@ services:
     command: [ "java", "-m", "jdk.httpserver", "-b", "0.0.0.0", "-d", "/data" ]
     depends_on:
       - db
+
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      - "9000:8080"
+    networks:
+      - app-network
+    restart: always
 
 volumes:
   pg-data:

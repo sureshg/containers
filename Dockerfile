@@ -71,7 +71,8 @@ CMD ["java", "--show-version", "-jar", "app.jar"]
 EXPOSE 80
 
 FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm
-RUN native-image --help
+RUN gu install native-image \
+    && native-image --version
 
 
 FROM jre-build as jlink

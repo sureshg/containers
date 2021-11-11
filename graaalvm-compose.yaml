@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  native-image-x86:
+    container_name: app-linux-x86
+    build:
+      context: .
+      target: graalvm
+      args:
+        JDK_VERSION: 17
+    platform: x86-64
+    working_dir: /app
+    volumes:
+      - ./:/app:rw
+    command: [ "java", "--show-version" ]
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+
+  native-image-arm64:
+    container_name: app-linux-arm64
+    build:
+      context: .
+      target: graalvm
+      args:
+        JDK_VERSION: 17
+    platform: arm64
+    working_dir: /app
+    volumes:
+      - ./:/app:rw
+    command: [ "java", "--show-version" ]
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:

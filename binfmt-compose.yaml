@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  binfmt:
+    container_name: binfmt
+    image: tonistiigi/binfmt
+    privileged: true
+    restart: always
+    command: [ "--install", "all" ]
+
+  binfmt-list:
+    container_name: binfmt-list
+    image: busybox
+    privileged: true
+    restart: always
+    volumes:
+      - /proc/sys/fs/binfmt_misc:/binfmt
+    command: [ "ls", "-1", "/binfmt" ]
+    depends_on:
+      - binfmt

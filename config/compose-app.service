@@ -1,5 +1,6 @@
 # /etc/systemd/system/compose-app.service
 # systemctl enable compose-app
+# Also, https://github.com/moby/moby/blob/master/contrib/init/systemd/docker.service
 
 [Unit]
 Description=Compose Application Service

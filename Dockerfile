@@ -74,5 +74,27 @@ FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm
 RUN gu install native-image \
     && native-image --version
 
+WORKDIR /app
+COPY App.java /app/App.java
+RUN javac App.java \
+    && native-image \
+    --static \
+    --no-fallback \
+    --allow-incomplete-classpath \
+    --install-exit-handlers \
+    -H:+ReportExceptionStackTraces \
+    App \
+    httpserver
+
+FROM scratch as graalvm-static
+#gcr.io/distroless/(static|base)
+COPY --from=graalvm /app/httpserver /
+CMD ["./httpserver"]
+EXPOSE 80/tcp
 
 FROM jre-build as jlink
+
+
+FROM envoyproxy/envoy:v1.20-latest as envoy
+COPY config/envoy.yaml /etc/envoy/envoy.yaml
+CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log

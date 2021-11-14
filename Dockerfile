@@ -57,7 +57,8 @@ RUN $DIST/bin/java -Xshare:dump \
 
 
 ##### App Image #####
-FROM debian:stable-slim AS openjdk
+# gcr.io/distroless/java:base (Unfortunately no ARM64 support)
+FROM  debian:stable-slim AS openjdk
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-build /javaruntime $JAVA_HOME
@@ -70,12 +71,16 @@ WORKDIR /app
 CMD ["java", "--show-version", "-jar", "app.jar"]
 EXPOSE 80
 
+##### GraalVM NativeImage Build #####
 FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm
 RUN gu install native-image \
     && native-image --version
 
 WORKDIR /app
 COPY App.java /app/App.java
+# --enable-all-security-services
+# --report-unsupported-elements-at-runtime
+# --initialize-at-build-time=kotlinx,kotlin,org.slf4j
 RUN javac App.java \
     && native-image \
     --static \
@@ -86,15 +91,18 @@ RUN javac App.java \
     App \
     httpserver
 
+##### Static App Image #####
 FROM scratch as graalvm-static
-#gcr.io/distroless/(static|base)
+# gcr.io/distroless/(static|base)
 COPY --from=graalvm /app/httpserver /
 CMD ["./httpserver"]
 EXPOSE 80/tcp
 
+##### For Jlinking apps #####
 FROM jre-build as jlink
 
 
+##### Envoy proxy #####
 FROM envoyproxy/envoy:v1.20-latest as envoy
 COPY config/envoy.yaml /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log

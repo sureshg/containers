@@ -57,7 +57,9 @@ RUN $DIST/bin/java -Xshare:dump \
 
 
 ##### App Image #####
-# gcr.io/distroless/java:base (Unfortunately no ARM64 support)
+# FROM gcr.io/distroless/java:base (Unfortunately no ARM64 support)
+# https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
+# cosign verify -key cosign.pub gcr.io/distroless/java:base
 FROM  debian:stable-slim AS openjdk
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"

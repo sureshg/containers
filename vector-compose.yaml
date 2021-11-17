@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  vector:
+    container_name: vector
+    image: timberio/vector:latest-distroless-static
+    restart: always
+    volumes:
+      - ./config/vector/vector.toml:/etc/vector/vector.toml:ro
+    networks:
+      - app-network
+    ports:
+      - "8383:8383"
+      - "8686:8686"
+
+networks:
+  app-network:

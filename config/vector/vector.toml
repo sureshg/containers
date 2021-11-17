@@ -1,0 +1,43 @@
+# Set global options
+data_dir = "/var/lib/vector"
+
+# Vector's API (disabled by default)
+# Enable and try it out with the `vector top` command
+[api]
+enabled = true
+address = "0.0.0.0:8686"
+
+# Original source
+[sources.generate_syslog]
+type = "generator"
+format = "syslog"
+count = 100
+
+# Enrich with more data.
+[transforms.add_host]
+inputs = ["generate_syslog"]
+type = "add_fields"
+
+[transforms.add_host.fields]
+host = "${HOSTNAME}" # or "$HOSTNAME"
+env = "${ENV:-dev}" # default value when not present
+
+# Additional  transformation
+[transforms.remap_syslog]
+inputs = ["add_host"]
+type = "remap"
+source = '''
+  structured = parse_syslog!(.message)
+  . = merge(., structured)
+'''
+
+[sinks.emit_syslog]
+inputs = ["remap_syslog"]
+type = "console"
+encoding.codec = "json"
+
+# Ingest data by tailing one or more files
+[sources.apache_logs]
+type = "file"
+include = ["/var/log/apache2/*.log"]    # supports globbing
+ignore_older = 86400                    # 1 day

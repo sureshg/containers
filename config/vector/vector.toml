@@ -12,6 +12,7 @@ address = "0.0.0.0:8686"
 type = "generator"
 format = "syslog"
 count = 100
+interval=0.5
 
 # Enrich with more data.
 [transforms.add_host]

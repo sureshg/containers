@@ -21,14 +21,9 @@ services:
       - app-network
     depends_on:
       - db
-  #    ulimits:
-  #      nproc: 65535
-  #      nofile:
-  #        soft: 65535
-  #        hard: 65535
-  #    tmpfs:
-  #      - /run
-  #      - /var/run
+  # tmpfs:
+  #   - /run
+  #   - /var/run
 
   svc2:
     container_name: svc2

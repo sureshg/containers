@@ -63,6 +63,7 @@ RUN $DIST/bin/java -Xshare:dump \
 FROM  debian:stable-slim AS openjdk
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
+# ENV TZ "PST8PDT"
 COPY --from=jre-build /javaruntime $JAVA_HOME
 COPY --from=jre-build /app /app
 

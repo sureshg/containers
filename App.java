@@ -7,6 +7,7 @@ public class App {
     var server = HttpServer.create(new InetSocketAddress(80), 0);
     server.setExecutor(null);
     server.createContext("/", t -> {
+      // System.out.println("GET " + t.getRequestURI());
       var resp = "Java %s running on %s %s".formatted(
           System.getProperty("java.version"),
           System.getProperty("os.name"),

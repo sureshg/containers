@@ -2,7 +2,7 @@
 ARG JDK_VERSION=17
 
 FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
-MAINTAINER Suresh
+LABEL org.opencontainers.image.authors="Suresh"
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG JDK_VERSION
@@ -71,7 +71,7 @@ COPY --from=jre-build /app /app
 
 WORKDIR /app
 CMD ["java", "--show-version", "-jar", "app.jar"]
-EXPOSE 80
+EXPOSE 80/tcp
 
 ##### GraalVM NativeImage Build #####
 FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm

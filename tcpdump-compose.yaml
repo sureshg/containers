@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      target: openjdk
+      args:
+        JDK_VERSION: 17
+    restart: always
+    volumes:
+      - ./:/data:rw
+    command: [ "java", "--show-version", "-jar", "app.jar" ]
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+
+  load-gen:
+    image: peterevans/vegeta:latest
+    restart: always
+    networks:
+      - app-network
+    command: [ "/bin/sh","-c","echo 'GET http://app/tcpdump' | vegeta attack -rate=10 -duration=30s -name=App  | tee results.bin | vegeta report" ]
+    depends_on:
+      - app
+
+  tcpdump:
+    image: nicolaka/netshoot:latest
+    restart: always
+    # network_mode: "container:app"
+    networks:
+      - app-network
+    command: [ "tcpdump" ]
+    depends_on:
+      - app
+
+networks:
+  app-network:

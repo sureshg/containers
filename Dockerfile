@@ -103,6 +103,7 @@ EXPOSE 80/tcp
 
 
 ##### Jshell image #####
+# nerdctl build -t jshell --no-cache --target jshell .
 # nerdctl run -it --rm -e TZ="UTC" jshell
 FROM openjdk:18-alpine as jshell
 

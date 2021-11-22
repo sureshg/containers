@@ -101,6 +101,18 @@ COPY --from=graalvm /app/httpserver /
 CMD ["./httpserver"]
 EXPOSE 80/tcp
 
+
+##### Jshell image #####
+# nerdctl run -it --rm -e TZ="UTC" jshell
+FROM openjdk:18-alpine as jshell
+
+ENV TZ "PST8PDT"
+RUN echo "System.out.println(TimeZone.getDefault().getID());" >> app.jsh
+RUN echo "/exit" >> app.jsh
+
+CMD ["jshell", "--enable-preview", "--startup", "JAVASE", "app.jsh"]
+
+
 ##### For Jlinking apps #####
 FROM jre-build as jlink
 

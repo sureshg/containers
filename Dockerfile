@@ -111,7 +111,7 @@ ENV TZ "PST8PDT"
 RUN echo "System.out.println(TimeZone.getDefault().getID());" >> app.jsh
 RUN echo "/exit" >> app.jsh
 
-CMD ["jshell", "--enable-preview", "--startup", "JAVASE", "app.jsh"]
+CMD ["jshell", "--enable-preview", "--startup", "JAVASE", "--feedback", "concise", "app.jsh"]
 
 
 ##### For Jlinking apps #####

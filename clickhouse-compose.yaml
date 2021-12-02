@@ -3,56 +3,81 @@ version: "3.8"
 services:
 
   clickhouse-server:
-    image: yandex/clickhouse-server:latest-alpine
+    image: clickhouse/clickhouse-server:latest-alpine
     restart: always
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - clickhouse-log:/var/log/clickhouse-server
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 262144
-        hard: 262144
     ports:
       - "8123:8123"
       - "9000:9000"
+      - "9009:9009"
+    ulimits:
+      nproc: 65535
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      resources:
+        limits:
+          memory: 4g
     networks:
       - app-network
-    depends_on:
-      - zookeeper
+  #    depends_on:
+  #      - zookeeper
 
-  zookeeper:
-    image: zookeeper:3.6.2
-    restart: always
-    expose:
-      - "2181"
+  grafana:
+    image: grafana/grafana:8.2.5
+    ports:
+      - "3000:3000"
     environment:
-      ZOO_MY_ID: 1
-      ZOO_TICK_TIME: 500
-      # JVMFLAGS: -Dzookeeper.forceSync=no
-      # ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;218  \
-    volumes:
-      - zk-data:/data
-      - zk-datalog:/datalog
-    healthcheck:
-      test: echo stat | nc localhost 2181
-      interval: 3s
-      timeout: 2s
-      retries: 5
-      start_period: 2s
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,vertamedia-clickhouse-datasource,natel-plotly-panel
+    #      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=vertamedia-clickhouse-datasource
+    restart: always
     networks:
       - app-network
-  # deploy:
-  #   replicas: 1
-
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    depends_on:
+      - clickhouse-server
+  #
+  #  zookeeper:
+  #    image: zookeeper:3.6.2
+  #    restart: always
+  #    expose:
+  #      - "2181"
+  #    environment:
+  #      ZOO_MY_ID: 1
+  #      ZOO_TICK_TIME: 500
+  #      # JVMFLAGS: -Dzookeeper.forceSync=no
+  #      # ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;218  \
+  #    volumes:
+  #      - zk-data:/data
+  #      - zk-datalog:/datalog
+  #    healthcheck:
+  #      test: echo stat | nc localhost 2181
+  #      interval: 3s
+  #      timeout: 2s
+  #      retries: 5
+  #      start_period: 2s
+  #    networks:
+  #      - app-network
+  #  # deploy:
+  #  #   replicas: 1
+  #
   db-data:
     image: openjdk:18-slim
     restart: always
     volumes:
       - clickhouse-data:/data/clickhouse/data
       - clickhouse-log:/data/clickhouse/log
-      - zk-data:/data/zk/data
-      - zk-datalog:/data/zk/log
+    #      - zk-data:/data/zk/data
+    #      - zk-datalog:/data/zk/log
     ports:
       - "8000:8000"
     networks:
@@ -64,8 +89,6 @@ services:
 volumes:
   clickhouse-data:
   clickhouse-log:
-  zk-data:
-  zk-datalog:
 
 networks:
   app-network:

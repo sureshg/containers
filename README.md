@@ -32,7 +32,16 @@ $ ls -1 /proc/sys/fs/binfmt_misc/qemu*
 $ sudo nerdctl run --rm --platform=s390x alpine uname -a
 Linux 4e155a2bc889 5.10.61-0-virt #1-Alpine SMP Mon, 30 Aug 2021 07:41:25 UTC s390x Linux
 ```
+ 
+ - Hostnames to access the `Rancher Desktop` host.
 
+```markdown
+* 192.168.5.2 (Lima/qemu gateway address)
+* host.docker.internal  
+* host.lima.internal
+* host.rancher-desktop.internal
+* host.k3d.internal
+```
  - Update [nerdctl][2] on [Rancher Desktop][3]
 
 ```bash

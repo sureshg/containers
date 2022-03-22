@@ -1,8 +1,21 @@
+# Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups
+# https://twitter.com/jpetazzo/status/1047179436959956992
+
 ##### Build Image #####
 ARG JDK_VERSION=17
+ARG APP_USER=app
+ARG APP_DIR="/app"
 
 FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+LABEL maintainer="Suresh"
 LABEL org.opencontainers.image.authors="Suresh"
+LABEL org.opencontainers.image.title="Java JLinked Application"
+LABEL org.opencontainers.image.description="Java JLinked Application"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.vendor="Suresh"
+LABEL org.opencontainers.image.url="https://github.com/sureshg/nerdctl-xplatform"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG JDK_VERSION
@@ -13,9 +26,11 @@ RUN echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLAT
 
 # Install objcopy for jlink
 RUN set -eux; \
-    apt update \
-    && apt -y upgrade \
-    && DEBIAN_FRONTEND=noninteractive apt install -y binutils;
+    apt -y update && \
+    apt -y upgrade && \
+    apt -y install --no-install-recommends binutils curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt -y clean
 
 # Copy the application
 RUN mkdir /app
@@ -60,17 +75,30 @@ RUN $DIST/bin/java -Xshare:dump \
 # FROM gcr.io/distroless/java:base (Unfortunately no ARM64 support)
 # https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
 # cosign verify -key cosign.pub gcr.io/distroless/java:base
+
+# docker build -t repo/app:1.0 -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
+# docker run -it --rm --entrypoint "/bin/bash" repo/app:1.0 -c "id; pwd"
+# docker run -it --rm -p 8080:80 repo/app:1.0
 FROM  debian:stable-slim AS openjdk
+
+ARG APP_USER
+ARG APP_DIR
+
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 # ENV TZ "PST8PDT"
 COPY --from=jre-build /javaruntime $JAVA_HOME
-COPY --from=jre-build /app /app
+COPY --from=jre-build ${APP_DIR} ${APP_DIR}
+
+WORKDIR ${APP_DIR}
+RUN useradd --home-dir ${APP_DIR} --create-home --uid 5000 --shell /bin/bash --user-group ${APP_USER}
+USER ${APP_USER}
 
 # USER nobody:nobody
 # COPY --from=jre-build --chown=nobody:nobody /opt/java /opt/java
 
-WORKDIR /app
+# Shell vs Exec - https://docs.docker.com/engine/reference/builder/#run
+# ENTRYPOINT ["java"]
 CMD ["java", "--show-version", "-jar", "app.jar"]
 EXPOSE 80/tcp
 
@@ -120,5 +148,6 @@ FROM jre-build as jlink
 
 ##### Envoy proxy #####
 FROM envoyproxy/envoy:v1.20-latest as envoy
+# COPY --chown=app ...
 COPY config/envoy.yaml /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log

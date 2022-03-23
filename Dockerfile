@@ -70,6 +70,7 @@ RUN $DIST/bin/java -Xshare:dump \
     && $DIST/bin/java --list-modules \
     && du -sh $DIST
 
+# du -kcsh *
 
 ##### App Image #####
 # FROM gcr.io/distroless/java:base (Unfortunately no ARM64 support)

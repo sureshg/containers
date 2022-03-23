@@ -1,10 +1,7 @@
-# [nerdctl][2] multi-platform
- A sample repo to demo non-native(multi-platform) `openjdk` container images using `nerdctl`
-
-
-
-
-
+# Container/K8S Playground!
+ 
+ Container/K8S/Compose playground using [k3s][5]/[nerdctl][2]/[Rancher Desktop][3]. 
+ Also contains a demo non-native(multi-platform) `openjdk` container image using `nerdctl`
 
 ## Install
 
@@ -51,8 +48,9 @@ $ curl -sfL https://github.com/containerd/nerdctl/releases/download/v0.13.0/nerd
 $ nerdctl --version
 ```
 
-
 [0]: https://github.com/containerd/containerd
 [1]: https://github.com/containerd/nerdctl/blob/master/docs/multi-platform.md
 [2]: https://github.com/containerd/nerdctl
 [3]: https://github.com/rancher-sandbox/rancher-desktop
+[4]: https://github.com/Gibdos/compose_collection
+[5]: https://k3s.io/

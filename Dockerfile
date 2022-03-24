@@ -12,11 +12,12 @@ FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL maintainer="Suresh"
 LABEL org.opencontainers.image.authors="Suresh"
-LABEL org.opencontainers.image.title="Java JLinked Application"
-LABEL org.opencontainers.image.description="Java JLinked Application"
+LABEL org.opencontainers.image.title="Containers"
+LABEL org.opencontainers.image.description="🐳 Container/K8S/Compose playground using k3s/nerdctl/Rancher Desktop!"
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.vendor="Suresh"
-LABEL org.opencontainers.image.url="https://github.com/sureshg/nerdctl-xplatform"
+LABEL org.opencontainers.image.url="https://github.com/sureshg/containers"
+LABEL org.opencontainers.image.source="https://github.com/sureshg/containers"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope

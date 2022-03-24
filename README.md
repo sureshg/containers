@@ -1,5 +1,6 @@
 # Container/K8S Playground!
- 
+[![Docker](https://github.com/sureshg/containers/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sureshg/containers/actions/workflows/docker-publish.yml)
+
  Container/K8S/Compose playground using [k3s][5]/[nerdctl][2]/[Rancher Desktop][3]. 
  Also contains a demo non-native(multi-platform) `openjdk` container image using `nerdctl`
 

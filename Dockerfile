@@ -7,7 +7,7 @@ ARG APP_USER=app
 ARG APP_DIR="/app"
 ARG SRC_DIR="/src"
 
-# DOCKER_BUILDKIT=1 docker build -t repo/jre-build:1.0 -f Dockerfile --build-arg APP_USER=app --target jre-build .
+# DOCKER_BUILDKIT=1 docker build -t repo/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
 FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL maintainer="Suresh"

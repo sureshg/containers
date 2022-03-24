@@ -5,7 +5,9 @@
 ARG JDK_VERSION=17
 ARG APP_USER=app
 ARG APP_DIR="/app"
+ARG SRC_DIR="/src"
 
+# DOCKER_BUILDKIT=1 docker build -t repo/jre-build:1.0 -f Dockerfile --build-arg APP_USER=app --target jre-build .
 FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL maintainer="Suresh"
@@ -21,6 +23,8 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 ARG JDK_VERSION
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
+ARG APP_DIR
+ARG SRC_DIR
 
 RUN echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
 
@@ -30,16 +34,25 @@ RUN set -eux; \
     apt -y upgrade && \
     apt -y install --no-install-recommends binutils curl && \
     rm -rf /var/lib/apt/lists/* && \
-    apt -y clean
+    apt -y clean && \
+    mkdir -p ${APP_DIR}
 
-# Copy the application
-RUN mkdir /app
-WORKDIR /app
-COPY App.java /app/App.java
+# Instead of copying, mount the application and build the jar
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#build-mounts-run---mount
+WORKDIR ${SRC_DIR}
+RUN --mount=type=bind,target=.,rw \
+    --mount=type=cache,target=/root/.m2 \
+    --mount=type=cache,target=/var/cache/apt \
+    --mount=type=cache,target=/var/lib/apt \
+    javac -verbose -g -parameters --enable-preview -Werror --release ${JDK_VERSION} *.java -d . && \
+    jar cfe ${APP_DIR}/app.jar App *.class
 
+WORKDIR ${APP_DIR}
 # Create the application jar
-RUN javac *.java \
-    && jar cfe app.jar App *.class
+#
+# COPY App.java .
+# RUN javac *.java \
+#    && jar cfe app.jar App *.class
 
 # Get all modules for the app
 RUN jdeps \
@@ -77,10 +90,11 @@ RUN $DIST/bin/java -Xshare:dump \
 # https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
 # cosign verify -key cosign.pub gcr.io/distroless/java:base
 
-# docker build -t repo/app:1.0 -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t repo/app:1.0 -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
 # docker run -it --rm --entrypoint "/bin/bash" repo/app:1.0 -c "id; pwd"
 # docker run -it --rm -p 8080:80 repo/app:1.0
-FROM  debian:stable-slim AS openjdk
+# dive repo/app:1.0
+FROM debian:stable-slim AS openjdk
 
 ARG APP_USER
 ARG APP_DIR
@@ -88,6 +102,8 @@ ARG APP_DIR
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 # ENV TZ "PST8PDT"
+
+# These copy will run concurrently on BUILDKIT.
 COPY --from=jre-build /javaruntime $JAVA_HOME
 COPY --from=jre-build ${APP_DIR} ${APP_DIR}
 

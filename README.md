@@ -1,5 +1,7 @@
 # Container/K8S Playground!
-[![Docker](https://github.com/sureshg/containers/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sureshg/containers/actions/workflows/docker-publish.yml)
+
+[![GitHub Workflow Status][gha_badge]][gha_url]
+[![Docker Linter][lint_img]][lint_url]
 
  Container/K8S/Compose playground using [k3s][5]/[nerdctl][2]/[Rancher Desktop][3]. 
  Also contains a demo non-native(multi-platform) `openjdk` container image using `nerdctl`
@@ -55,3 +57,10 @@ $ nerdctl --version
 [3]: https://github.com/rancher-sandbox/rancher-desktop
 [4]: https://github.com/Gibdos/compose_collection
 [5]: https://k3s.io/
+
+[gha_url]: https://github.com/sureshg/containers/actions/workflows/docker-publish.yml
+[gha_img]: https://github.com/sureshg/containers/actions/workflows/docker-publish.yml/badge.svg
+[gha_badge]: https://img.shields.io/github/workflow/status/sureshg/containers/Docker?color=green&label=Container%20Build&logo=Github-Actions&logoColor=green&style=for-the-badge
+
+[lint_url]: https://hadolint.github.io/hadolint/
+[lint_img]: https://img.shields.io/badge/Dockerfile%20Linter-%E2%9D%A4-2596ec.svg?logo=Docker&style=for-the-badge&logoColor=2596ec

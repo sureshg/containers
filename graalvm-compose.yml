@@ -1,5 +1,8 @@
 version: "3.8"
 
+# DOCKER_BUILDKIT=1  docker compose -f graalvm-compose.yml up
+# DOCKER_BUILDKIT=1  docker compose -f graalvm-compose.yml up --build native-image-amd64
+# DOCKER_BUILDKIT=1  docker compose -f graalvm-compose.yml up --build native-image-arm64
 services:
   native-image-amd64:
     container_name: app-linux-amd64
@@ -8,12 +11,12 @@ services:
       target: graalvm-static
       args:
         JDK_VERSION: 17
-    platform: amd64
+    platform: linux/amd64
     volumes:
       - ./:/src:rw
     command: [ "./httpserver" ]
     ports:
-      - "8080:80"
+      - "8081:80"
     networks:
       - app-network
 
@@ -24,12 +27,12 @@ services:
       target: graalvm-static
       args:
         JDK_VERSION: 17
-    platform: arm64
+    platform: linux/arm64
     volumes:
       - ./:/src:rw
     command: [ "./httpserver" ]
     ports:
-      - "8080:80"
+      - "8082:80"
     networks:
       - app-network
 

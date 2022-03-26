@@ -2,13 +2,15 @@
 # https://twitter.com/jpetazzo/status/1047179436959956992
 
 ##### Build Image #####
-ARG JDK_VERSION=17
+ARG JDK_VERSION=19
 ARG APP_USER=app
 ARG APP_DIR="/app"
 ARG SRC_DIR="/src"
 
 # DOCKER_BUILDKIT=1 docker build -t repo/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
-FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
+FROM openjdk:${JDK_VERSION}-slim AS jre-build
+# FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
+
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL maintainer="Suresh"
 LABEL org.opencontainers.image.authors="Suresh"
@@ -26,6 +28,7 @@ ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG APP_DIR
 ARG SRC_DIR
+# ARG TARGETPLATFORM=linux/aarch64
 
 RUN echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
 
@@ -37,6 +40,7 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/* && \
     apt -y clean && \
     mkdir -p ${APP_DIR}
+# apt -y install ca-certificates, unzip
 
 # Instead of copying, mount the application and build the jar
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#build-mounts-run---mount
@@ -102,11 +106,13 @@ ARG APP_DIR
 
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
-# ENV TZ "PST8PDT"
+# ENV LANG en_US.UTF-8 \
+#     TZ "PST8PDT"
 
 # These copy will run concurrently on BUILDKIT.
 COPY --from=jre-build /javaruntime $JAVA_HOME
 COPY --from=jre-build ${APP_DIR} ${APP_DIR}
+# COPY --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
 WORKDIR ${APP_DIR}
 RUN useradd --home-dir ${APP_DIR} --create-home --uid 5000 --shell /bin/bash --user-group ${APP_USER}
@@ -121,9 +127,10 @@ CMD ["java", "--show-version", "-jar", "app.jar"]
 EXPOSE 80/tcp
 
 ##### GraalVM NativeImage Build #####
-FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm
-RUN gu install native-image \
-    && native-image --version
+FROM ghcr.io/graalvm/native-image:latest as graalvm
+
+#RUN gu install native-image \
+#    && native-image --version
 
 WORKDIR /app
 COPY App.java /app/App.java
@@ -169,3 +176,10 @@ FROM envoyproxy/envoy:v1.20-latest as envoy
 # COPY --chown=app ...
 COPY config/envoy.yaml /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log
+
+
+#### NetCat Webserver
+# DOCKER_BUILDKIT=1 docker build -t sureshg/netcat-server --target netcat .
+# docker run -p 8080:8080 -e PORT=8080 -it sureshg/netcat-server
+FROM alpine as netcat
+ENTRYPOINT while :; do nc -k -l -p $PORT -e sh -c 'echo -e "HTTP/1.1 200 OK\n\n Hello, world $(date).\n$(env)"'; done

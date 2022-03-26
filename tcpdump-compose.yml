@@ -1,5 +1,6 @@
 version: "3.8"
 
+# DOCKER_BUILDKIT=1  docker compose -f tcpdump-compose.yml up
 services:
   app:
     build:
@@ -7,9 +8,12 @@ services:
       target: openjdk
       args:
         JDK_VERSION: 17
+    container_name: app
     restart: always
     volumes:
       - ./:/data:rw
+    tmpfs:
+      - /test
     command: [ "java", "--show-version", "-jar", "app.jar" ]
     ports:
       - "8080:80"
@@ -18,17 +22,19 @@ services:
 
   load-gen:
     image: peterevans/vegeta:latest
-    restart: always
+    container_name: vegeta
+    # restart: always
     networks:
       - app-network
-    command: [ "/bin/sh","-c","echo 'GET http://app/tcpdump' | vegeta attack -rate=10 -duration=30s -name=App  | tee results.bin | vegeta report" ]
+    command: [ "/bin/sh","-c","echo 'GET http://app/test' | vegeta attack -rate=10 -duration=5s -name=App  | tee results.bin | vegeta report" ]
     depends_on:
       - app
 
   tcpdump:
     image: nicolaka/netshoot:latest
+    container_name: tcpdump
     restart: always
-    # network_mode: "container:app"
+    network_mode: container:app
     networks:
       - app-network
     command: [ "tcpdump" ]

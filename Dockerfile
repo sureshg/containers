@@ -1,5 +1,5 @@
-# Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups
-# https://twitter.com/jpetazzo/status/1047179436959956992
+# Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups (https://twitter.com/jpetazzo/status/1047179436959956992)
+# https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 ##### Build Image #####
 ARG JDK_VERSION=19
@@ -36,7 +36,10 @@ RUN echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLAT
 RUN set -eux; \
     apt -y update && \
     apt -y upgrade && \
-    apt -y install --no-install-recommends binutils curl && \
+    apt -y install --no-install-recommends \
+           binutils \
+           curl  \
+           ca-certificates && \
     rm -rf /var/lib/apt/lists/* && \
     apt -y clean && \
     mkdir -p ${APP_DIR}
@@ -46,11 +49,13 @@ RUN set -eux; \
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#build-mounts-run---mount
 WORKDIR ${SRC_DIR}
 RUN --mount=type=bind,target=.,rw \
+    --mount=type=secret,id=db,target=/secrets/db \
     --mount=type=cache,target=/root/.m2 \
     --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
-    javac -verbose -g -parameters --enable-preview -Werror --release ${JDK_VERSION} *.java -d . && \
-    jar cfe ${APP_DIR}/app.jar App *.class
+    javac -verbose -g -parameters --enable-preview -Werror --release ${JDK_VERSION} src/*.java -d . && \
+    jar cfe ${APP_DIR}/app.jar App *.class && \
+    cat /secrets/db || exit 0
 
 WORKDIR ${APP_DIR}
 # Create the application jar
@@ -91,18 +96,19 @@ RUN $DIST/bin/java -Xshare:dump \
 # du -kcsh *
 
 ##### App Image #####
-# FROM gcr.io/distroless/java:base (Unfortunately no ARM64 support)
 # https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
 # cosign verify -key cosign.pub gcr.io/distroless/java:base
 
-# DOCKER_BUILDKIT=1 docker build -t repo/app:1.0 -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
-# docker run -it --rm --entrypoint "/bin/bash" repo/app:1.0 -c "id; pwd"
-# docker run -it --rm -p 8080:80 repo/app:1.0
-# dive repo/app:1.0
-FROM debian:stable-slim AS openjdk
+# DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
+# docker run -it --rm --entrypoint "/bin/bash" repo/app:latest -c "id; pwd"
+# docker run -it --rm -p 8080:80 repo/app:latest
+# dive repo/app:latest
+FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base-debian11:nonroot as openjdk
+# FROM debian:stable-slim AS openjdk
 
-ARG APP_USER
 ARG APP_DIR
+# ARG APP_USER
 
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
@@ -110,13 +116,14 @@ ENV PATH "${JAVA_HOME}/bin:${PATH}"
 #     TZ "PST8PDT"
 
 # These copy will run concurrently on BUILDKIT.
-COPY --from=jre-build /javaruntime $JAVA_HOME
-COPY --from=jre-build ${APP_DIR} ${APP_DIR}
+COPY --from=jre-build --chmod=755 /javaruntime $JAVA_HOME
+COPY --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
 # COPY --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
 WORKDIR ${APP_DIR}
-RUN useradd --home-dir ${APP_DIR} --create-home --uid 5000 --shell /bin/bash --user-group ${APP_USER}
-USER ${APP_USER}
+# Create a user/group
+# RUN useradd --home-dir ${APP_DIR} --create-home --uid 5000 --shell /bin/bash --user-group ${APP_USER}
+# USER ${APP_USER}
 
 # USER nobody:nobody
 # COPY --from=jre-build --chown=nobody:nobody /opt/java /opt/java
@@ -129,7 +136,7 @@ EXPOSE 80/tcp
 ##### GraalVM NativeImage Build #####
 FROM ghcr.io/graalvm/native-image:latest as graalvm
 
-#RUN gu install native-image \
+# RUN gu install native-image \
 #    && native-image --version
 
 WORKDIR /app
@@ -180,6 +187,6 @@ CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy
 
 #### NetCat Webserver
 # DOCKER_BUILDKIT=1 docker build -t sureshg/netcat-server --target netcat .
-# docker run -p 8080:8080 -e PORT=8080 -it sureshg/netcat-server
+# docker run -p 8080:80 -e PORT=80 -it sureshg/netcat-server
 FROM alpine as netcat
 ENTRYPOINT while :; do nc -k -l -p $PORT -e sh -c 'echo -e "HTTP/1.1 200 OK\n\n Hello, world $(date).\n$(env)"'; done

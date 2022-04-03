@@ -19,6 +19,10 @@ services:
       - "8080:80"
     networks:
       - app-network
+  # privileged: true
+  # cap_add:
+  #   - NET_ADMIN
+  #   - SYS_ADMIN
     depends_on:
       - db
   # tmpfs:

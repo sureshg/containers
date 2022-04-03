@@ -3,7 +3,7 @@
 [![GitHub Workflow Status][gha_badge]][gha_url]
 [![Docker Linter][lint_img]][lint_url]
 
- Container/K8S/Compose playground using [k3s][5]/[nerdctl][2]/[Rancher Desktop][3]. 
+ Container/K8S/Compose playground using [k3s][4]/[nerdctl][2]/[Rancher Desktop][3]. 
  Also contains a demo non-native(multi-platform) `openjdk` container image using `nerdctl`
 
 ## Install
@@ -58,8 +58,9 @@
 [1]: https://github.com/containerd/nerdctl/blob/master/docs/multi-platform.md
 [2]: https://github.com/containerd/nerdctl
 [3]: https://github.com/rancher-sandbox/rancher-desktop
-[4]: https://github.com/Gibdos/compose_collection
-[5]: https://k3s.io/
+[4]: https://k3s.io/
+[5]: https://github.com/jpetazzo/minimage
+[6]: https://github.com/Gibdos/compose_collection
 
 [gha_url]: https://github.com/sureshg/containers/actions/workflows/docker-publish.yml
 [gha_img]: https://github.com/sureshg/containers/actions/workflows/docker-publish.yml/badge.svg

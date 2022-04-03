@@ -54,6 +54,10 @@
    $ nerdctl --version
    ```
 
+## Resources
+  - [Runtime privilege and Linux capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities)
+  - [Runtime options with Memory, CPUs, and GPUs](https://docs.docker.com/config/containers/resource_constraints/)
+
 [0]: https://github.com/containerd/containerd
 [1]: https://github.com/containerd/nerdctl/blob/master/docs/multi-platform.md
 [2]: https://github.com/containerd/nerdctl

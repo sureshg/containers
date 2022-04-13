@@ -5,32 +5,40 @@
 ARG JDK_VERSION=19
 ARG APP_USER=app
 ARG APP_DIR="/app"
+ARG APP_JAR=app.jar
 ARG SRC_DIR="/src"
 
-# DOCKER_BUILDKIT=1 docker build -t repo/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
-FROM openjdk:${JDK_VERSION}-slim AS jre-build
+# DOCKER_BUILDKIT=1 docker build --progress=plain -t repo/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
 # FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
+FROM openjdk:${JDK_VERSION}-slim AS jre-build
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
-LABEL maintainer="Suresh"
-LABEL org.opencontainers.image.authors="Suresh"
-LABEL org.opencontainers.image.title="Containers"
-LABEL org.opencontainers.image.description="🐳 Container/K8S/Compose playground using k3s/nerdctl/Rancher Desktop!"
-LABEL org.opencontainers.image.version="1.0.0"
-LABEL org.opencontainers.image.vendor="Suresh"
-LABEL org.opencontainers.image.url="https://github.com/sureshg/containers"
-LABEL org.opencontainers.image.source="https://github.com/sureshg/containers"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL maintainer="Suresh" \
+      org.opencontainers.image.authors="Suresh" \
+      org.opencontainers.image.title="Containers" \
+      org.opencontainers.image.description="🐳 Container/K8S/Compose playground using k3s/nerdctl/Rancher Desktop!" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="Suresh" \
+      org.opencontainers.image.url="https://github.com/sureshg/containers" \
+      org.opencontainers.image.source="https://github.com/sureshg/containers" \
+      org.opencontainers.image.licenses="Apache-2.0"
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG JDK_VERSION
+ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG APP_DIR
+ARG APP_JAR
 ARG SRC_DIR
 # ARG TARGETPLATFORM=linux/aarch64
 
 RUN echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
+
+# Set HTTP(s) Proxy
+# ENV HTTP_PROXY="http://proxy.test.com:8080"
+# ENV HTTPS_PROXY="http://proxy.test.com:8080"
+# ENV NO_PROXY="*.test1.com,*.test2.com,127.0.0.1,localhost"
 
 # Install objcopy for jlink
 RUN set -eux; \
@@ -38,12 +46,13 @@ RUN set -eux; \
     apt -y upgrade && \
     apt -y install --no-install-recommends \
            binutils \
-           curl  \
+           curl \
+           tzdata \
            ca-certificates && \
     rm -rf /var/lib/apt/lists/* && \
     apt -y clean && \
     mkdir -p ${APP_DIR}
-# apt -y install ca-certificates, unzip
+#   freetype fontconfig
 
 # Instead of copying, mount the application and build the jar
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#build-mounts-run---mount
@@ -53,8 +62,17 @@ RUN --mount=type=bind,target=.,rw \
     --mount=type=cache,target=/root/.m2 \
     --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
-    javac -verbose -g -parameters --enable-preview -Werror --release ${JDK_VERSION} src/*.java -d . && \
-    jar cfe ${APP_DIR}/app.jar App *.class && \
+    javac --enable-preview \
+          -verbose \
+          -g \
+          -parameters \
+          -Xlint:all \
+          -Xdoclint:none \
+          -Werror \
+          --release ${JDK_VERSION} \
+          src/*.java \
+          -d . && \
+    jar cfe ${APP_DIR}/${APP_JAR} App *.class && \
     cat /secrets/db || exit 0
 
 WORKDIR ${APP_DIR}
@@ -62,7 +80,7 @@ WORKDIR ${APP_DIR}
 #
 # COPY App.java .
 # RUN javac *.java \
-#    && jar cfe app.jar App *.class
+#    && jar cfe ${APP_JAR} App *.class
 
 # Get all modules for the app
 RUN jdeps \
@@ -75,7 +93,7 @@ RUN jdeps \
       > java.modules
 
 # Create custom runtime
-ENV DIST /javaruntime
+ENV DIST /opt/java/openjdk
 RUN JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork" \
     $JAVA_HOME/bin/jlink \
          --add-modules="jdk.crypto.ec,$(cat java.modules)" \
@@ -83,40 +101,47 @@ RUN JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork" \
          --no-man-pages \
          --no-header-files \
          --compress=2 \
-         --output $DIST
+         --output $DIST && \
+    rm -f java.modules
 
-# Create default CDS archive and verify it
+# Create default CDS archive for jlinked runtime and verify it
 RUN $DIST/bin/java -Xshare:dump \
-    # check if it worked, this will fail if it can't map the archive
+    # check if it worked, this will fail if it can't map the archive (lib/server/classes.jsa)
     && $DIST/bin/java -Xshare:on --version \
     # list all modules included in the custom java runtime
     && $DIST/bin/java --list-modules \
     && du -sh $DIST
 
-# du -kcsh *
+# Create dynamic CDS archive by running the app.
+RUN nohup $DIST/bin/java \
+    -XX:+AutoCreateSharedArchive \
+    -XX:SharedArchiveFile=${APP_DIR}/app.jsa \
+    -jar ${APP_JAR} & \
+    sleep 1 && \
+    curl -sfL http://localhost/test && \
+    curl -sfL http://localhost/shutdown || exit 0
+
+RUN  du -kcsh * && \
+     du -kcsh $DIST
 
 ##### App Image #####
-# https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
-# cosign verify -key cosign.pub gcr.io/distroless/java:base
-
 # DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
 # DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
 # docker run -it --rm --entrypoint "/bin/bash" repo/app:latest -c "id; pwd"
 # docker run -it --rm -p 8080:80 repo/app:latest
-# dive repo/app:latest
 FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base-debian11:nonroot as openjdk
 # FROM debian:stable-slim AS openjdk
 
 ARG APP_DIR
-# ARG APP_USER
-
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
+
+# ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 # ENV LANG en_US.UTF-8 \
 #     TZ "PST8PDT"
 
 # These copy will run concurrently on BUILDKIT.
-COPY --from=jre-build --chmod=755 /javaruntime $JAVA_HOME
+COPY --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
 COPY --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
 # COPY --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
@@ -130,8 +155,53 @@ WORKDIR ${APP_DIR}
 
 # Shell vs Exec - https://docs.docker.com/engine/reference/builder/#run
 # ENTRYPOINT ["java"]
-CMD ["java", "--show-version", "-jar", "app.jar"]
+CMD ["java", "-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=/app/app.jsa","-Xlog:cds", "--show-version", "-jar", "app.jar"]
 EXPOSE 80/tcp
+
+
+# Container to print assembly generated by JVM C1/C2 compilers
+FROM openjdk:${JDK_VERSION}-slim as hsdis
+
+ARG JDK_VERSION
+ARG TARGETARCH
+
+RUN echo "Building Java ${JDK_VERSION} Hotspot Disassembler image for ${TARGETARCH}" && \
+    apt -y update && \
+    apt -y install --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt -y clean
+
+RUN set -eux; \
+    # ARCH="$(dpkg --print-architecture)"; \
+    case "${TARGETARCH}" in \
+       amd64|x86_64) \
+         SHA256_SUM='2ebd13ca0dd0a3f20c49b99c12b72e376b6c371975f734403048ddf3d7b51507'; \
+         BINARY_URL='https://chriswhocodes.com/hsdis/hsdis-amd64.so'; \
+         ;; \
+       aarch64|arm64) \
+         SHA256_SUM='c531ae2f6002987b1d7ee5713a76e51bb54dc3da7b00c8b1214f021abda4dffb'; \
+         BINARY_URL='https://chriswhocodes.com/hsdis/hsdis-aarch64.so'; \
+         ;; \
+       *) \
+         echo "Unsupported arch: ${TARGETARCH}"; \
+         exit 1; \
+         ;; \
+    esac; \
+	  wget -O /tmp/openjdk.tar.gz ${BINARY_URL}; \
+	  echo "${ESUM} */tmp/openjdk.tar.gz" | sha256sum -c -; \
+	  mkdir -p /opt/java/openjdk; \
+	  tar --extract \
+	      --file /tmp/openjdk.tar.gz \
+	      --directory /opt/java/openjdk \
+	      --strip-components 1 \
+	      --no-same-owner \
+	  ; \
+    rm -rf /tmp/openjdk.tar.gz; \
+
+
+
+ENTRYPOINT ["java", "--show-version", "-jar", "app.jar"]
+
 
 ##### GraalVM NativeImage Build #####
 FROM ghcr.io/graalvm/native-image:latest as graalvm
@@ -190,3 +260,11 @@ CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy
 # docker run -p 8080:80 -e PORT=80 -it sureshg/netcat-server
 FROM alpine as netcat
 ENTRYPOINT while :; do nc -k -l -p $PORT -e sh -c 'echo -e "HTTP/1.1 200 OK\n\n Hello, world $(date).\n$(env)"'; done
+
+
+# DOCKER_BUILDKIT=1 docker build -t sureshg/tools --target tools .
+# docker run -it --rm sureshg/tools
+FROM nicolaka/netshoot:latest as tools
+
+ENTRYPOINT ["sh", "-c"]
+CMD ["echo Q | openssl s_client --connect suresh.dev:443"]

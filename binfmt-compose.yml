@@ -3,7 +3,7 @@ version: "3.8"
 services:
   binfmt:
     container_name: binfmt
-    image: tonistiigi/binfmt
+    image: tonistiigi/binfmt:latest
     privileged: true
     restart: always
     command: [ "--install", "all" ]

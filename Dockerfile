@@ -1,7 +1,7 @@
 # Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups (https://twitter.com/jpetazzo/status/1047179436959956992)
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
-##### Build Image #####
+# Global build args
 ARG JDK_VERSION=19
 ARG APP_USER=app
 ARG APP_DIR="/app"
@@ -109,8 +109,7 @@ RUN $DIST/bin/java -Xshare:dump \
     # check if it worked, this will fail if it can't map the archive (lib/server/classes.jsa)
     && $DIST/bin/java -Xshare:on --version \
     # list all modules included in the custom java runtime
-    && $DIST/bin/java --list-modules \
-    && du -sh $DIST
+    && $DIST/bin/java --list-modules
 
 # Create dynamic CDS archive by running the app.
 RUN nohup $DIST/bin/java \
@@ -119,7 +118,8 @@ RUN nohup $DIST/bin/java \
     -jar ${APP_JAR} & \
     sleep 1 && \
     curl -sfL http://localhost/test && \
-    curl -sfL http://localhost/shutdown || exit 0
+    curl -sfL http://localhost/shutdown \
+    || sleep 1; exit 0
 
 RUN  du -kcsh * && \
      du -kcsh $DIST
@@ -155,7 +155,7 @@ WORKDIR ${APP_DIR}
 
 # Shell vs Exec - https://docs.docker.com/engine/reference/builder/#run
 # ENTRYPOINT ["java"]
-CMD ["java", "-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=/app/app.jsa","-Xlog:cds", "--show-version", "-jar", "app.jar"]
+CMD ["java", "--show-version", "-XX:+PrintCommandLineFlags", "-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=/app/app.jsa", "-jar", "app.jar"]
 EXPOSE 80/tcp
 
 

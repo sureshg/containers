@@ -1,12 +1,12 @@
 import static java.lang.System.out;
 
 import com.sun.net.httpserver.HttpServer;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 
 public class App {
 
   public static void main(String[] args) throws Exception {
-
     var start = System.currentTimeMillis();
     var server = HttpServer.create(new InetSocketAddress(80), 0);
     server.createContext("/", t -> {
@@ -22,9 +22,16 @@ public class App {
       }
     });
 
-    server.createContext("/shutdown", t -> System.exit(0));
+    server.createContext("/shutdown", t -> server.stop(0));
     server.start();
-    out.println("Starting Http Server on port " + server.getAddress().getPort() + ". Took "
-        + (System.currentTimeMillis() - start) + " millis!");
+
+    var currTime = System.currentTimeMillis();
+    var vmTime = ManagementFactory.getRuntimeMXBean().getStartTime();
+    // var vmTime  = ProcessHandle.current().info().startInstant().orElseGet(Instant::now);
+    out.println("Starting Http Server on port " + server.getAddress().getPort() + "...");
+    out.printf("Started in %d millis! (JVM: %dms, Server: %dms)%n",
+        (currTime - vmTime),
+        (start - vmTime),
+        (currTime - start));
   }
 }

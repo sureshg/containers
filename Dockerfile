@@ -2,7 +2,7 @@
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 # Global build args
-ARG JDK_VERSION=19
+ARG JDK_VERSION=20
 ARG APP_USER=app
 ARG APP_DIR="/app"
 ARG APP_JAR=app.jar
@@ -127,7 +127,7 @@ RUN  du -kcsh * && \
 ##### App Image #####
 # DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
 # DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
-# docker run -it --rm --entrypoint "/bin/bash" repo/app:latest -c "id; pwd"
+# docker run -it --rm --entrypoint "/bin/bash" --pull always repo/app:latest -c "id; pwd"
 # docker run -it --rm -p 8080:80 repo/app:latest
 FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base-debian11:nonroot as openjdk
 # FROM debian:stable-slim AS openjdk
@@ -196,9 +196,7 @@ RUN set -eux; \
 	      --strip-components 1 \
 	      --no-same-owner \
 	  ; \
-    rm -rf /tmp/openjdk.tar.gz; \
-
-
+    rm -rf /tmp/openjdk.tar.gz;
 
 ENTRYPOINT ["java", "--show-version", "-jar", "app.jar"]
 

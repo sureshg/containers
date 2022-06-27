@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups (https://twitter.com/jpetazzo/status/1047179436959956992)
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
@@ -9,7 +11,6 @@ ARG APP_JAR=app.jar
 ARG SRC_DIR="/src"
 
 # DOCKER_BUILDKIT=1 docker build --progress=plain -t repo/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
-# FROM eclipse-temurin:${JDK_VERSION}-focal AS jre-build
 FROM openjdk:${JDK_VERSION}-slim AS jre-build
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
@@ -33,26 +34,24 @@ ARG APP_JAR
 ARG SRC_DIR
 # ARG TARGETPLATFORM=linux/aarch64
 
-RUN echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
-
 # Set HTTP(s) Proxy
 # ENV HTTP_PROXY="http://proxy.test.com:8080"
 # ENV HTTPS_PROXY="http://proxy.test.com:8080"
 # ENV NO_PROXY="*.test1.com,*.test2.com,127.0.0.1,localhost"
 
 # Install objcopy for jlink
-RUN set -eux; \
-    apt -y update && \
-    apt -y upgrade && \
-    apt -y install --no-install-recommends \
-           binutils \
-           curl \
-           tzdata \
-           ca-certificates && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt -y clean && \
+RUN <<EOT
+    set -eux
+    echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
+    DEBIAN_FRONTEND=noninteractive
+    apt -y update
+    apt -y upgrade
+    apt -y install --no-install-recommends binutils curl tzdata ca-certificates
+    # apt -y install freetype fontconfig
+    rm -rf /var/lib/apt/lists/*
+    apt -y clean
     mkdir -p ${APP_DIR}
-#   freetype fontconfig
+EOT
 
 # Instead of copying, mount the application and build the jar
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#build-mounts-run---mount
@@ -61,68 +60,57 @@ RUN --mount=type=bind,target=.,rw \
     --mount=type=secret,id=db,target=/secrets/db \
     --mount=type=cache,target=/root/.m2 \
     --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
-    javac --enable-preview \
-          -verbose \
-          -g \
-          -parameters \
-          -Xlint:all \
-          -Xdoclint:none \
-          -Werror \
+    --mount=type=cache,target=/var/lib/apt <<EOT
+    echo "Building the application jar..."
+    javac --enable-preview -verbose -g -parameters -Xlint:all -Xdoclint:none -Werror \
           --release ${JDK_VERSION} \
           src/*.java \
-          -d . && \
-    jar cfe ${APP_DIR}/${APP_JAR} App *.class && \
+          -d .
+
+    jar cfe ${APP_DIR}/${APP_JAR} App *.class
     cat /secrets/db || exit 0
+EOT
 
 WORKDIR ${APP_DIR}
-# Create the application jar
-#
-# COPY App.java .
-# RUN javac *.java \
-#    && jar cfe ${APP_JAR} App *.class
-
-# Get all modules for the app
-RUN jdeps \
-      -q \
-      -R \
-      --ignore-missing-deps \
-      --print-module-deps \
-      --multi-release=${JDK_VERSION} \
-      *.jar \
-      > java.modules
-
-# Create custom runtime
 ENV DIST /opt/java/openjdk
-RUN JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork" \
-    $JAVA_HOME/bin/jlink \
-         --add-modules="jdk.crypto.ec,$(cat java.modules)" \
-         --strip-debug \
-         --no-man-pages \
-         --no-header-files \
-         --compress=2 \
-         --output $DIST && \
-    rm -f java.modules
 
-# Create default CDS archive for jlinked runtime and verify it
-RUN $DIST/bin/java -Xshare:dump \
-    # check if it worked, this will fail if it can't map the archive (lib/server/classes.jsa)
-    && $DIST/bin/java -Xshare:on --version \
-    # list all modules included in the custom java runtime
-    && $DIST/bin/java --list-modules
+RUN <<EOT
+ echo "Getting JDK module dependencies..."
+ jdeps -q -R --ignore-missing-deps --print-module-deps --multi-release=${JDK_VERSION} *.jar > java.modules
 
-# Create dynamic CDS archive by running the app.
-RUN nohup $DIST/bin/java \
-    -XX:+AutoCreateSharedArchive \
-    -XX:SharedArchiveFile=${APP_DIR}/app.jsa \
-    -jar ${APP_JAR} & \
+ echo "Creating custom runtime image..."
+ JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"
+ $JAVA_HOME/bin/jlink \
+          --add-modules="jdk.crypto.ec,$(cat java.modules)" \
+          --strip-debug \
+          --no-man-pages \
+          --no-header-files \
+          --compress=2 \
+          --output $DIST
+
+  # Create default CDS archive for jlinked runtime and verify it
+  $DIST/bin/java -Xshare:dump
+  # Check if it worked, this will fail if it can't map the archive (lib/server/classes.jsa)
+  $DIST/bin/java -Xshare:on --version
+  # List all modules included in the custom java runtime
+  $DIST/bin/java --list-modules
+
+  echo "Creating dynamic CDS archive by running the app..."
+  nohup $DIST/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=${APP_DIR}/app.jsa -jar ${APP_JAR} & \
     sleep 1 && \
     curl -sfL http://localhost/test && \
     curl -sfL http://localhost/shutdown \
     || sleep 1; exit 0
 
-RUN  du -kcsh * && \
-     du -kcsh $DIST
+  du -kcsh * | sort -n
+  du -kcsh $DIST
+EOT
+
+# Create inline file
+COPY <<-EOT /app/info
+ APP=${APP_DIR}/${APP_JAR}
+ JDK_VERSION=${JDK_VERSION}
+EOT
 
 ##### App Image #####
 # DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --target openjdk .
@@ -141,9 +129,9 @@ ENV PATH "${JAVA_HOME}/bin:${PATH}"
 #     TZ "PST8PDT"
 
 # These copy will run concurrently on BUILDKIT.
-COPY --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
-COPY --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
-# COPY --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
+COPY --link --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
+COPY --link --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
+# COPY --link --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
 WORKDIR ${APP_DIR}
 # Create a user/group
@@ -266,3 +254,15 @@ FROM nicolaka/netshoot:latest as tools
 
 ENTRYPOINT ["sh", "-c"]
 CMD ["echo Q | openssl s_client --connect suresh.dev:443"]
+
+FROM python:slim AS python
+
+ARG APP_DIR
+ARG APP_JAR
+
+RUN <<EOT
+#!/usr/bin/env python
+import time
+print("Hello ${APP_DIR}/${APP_JAR}")
+time.sleep(1)
+EOT

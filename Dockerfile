@@ -10,7 +10,7 @@ ARG APP_DIR="/app"
 ARG APP_JAR="app.jar"
 ARG SRC_DIR="/src"
 
-# DOCKER_BUILDKIT=1 docker build --progress=plain -t repo/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
+# DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
 FROM openjdk:${JDK_VERSION}-slim AS jre-build
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
@@ -136,10 +136,10 @@ COPY <<-EOT ${APP_DIR}/info
 EOT
 
 ##### App Image #####
-# DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --target openjdk .
-# DOCKER_BUILDKIT=1 docker build -t repo/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
-# docker run -it --rm --entrypoint "/bin/bash" --pull always repo/app:latest -c "id; pwd"
-# docker run -it --rm -p 8080:80 repo/app:latest
+# DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
+# docker run -it --rm --entrypoint "/bin/bash" --pull always sureshg/app:latest -c "id; pwd"
+# docker run -it --rm -p 8080:80 sureshg/app:latest
 FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base-debian11:nonroot as openjdk
 # FROM gcr.io/distroless/java-base:latest AS openjdk
 # FROM debian:stable-slim AS openjdk

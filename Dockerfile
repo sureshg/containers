@@ -78,7 +78,12 @@ ENV DIST /opt/java/openjdk
 RUN <<EOT
  set -eux
  echo "Getting JDK module dependencies..."
- jdeps -q -R --ignore-missing-deps --print-module-deps --multi-release=${JDK_VERSION} *.jar > java.modules
+ jdeps -q \
+       -R \
+       --ignore-missing-deps \
+       --print-module-deps \
+       --multi-release=${JDK_VERSION} \
+       *.jar > java.modules
 
  echo "Creating custom JDK runtime image..."
  JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"

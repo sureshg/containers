@@ -63,7 +63,13 @@ RUN --mount=type=bind,target=.,rw \
     --mount=type=cache,target=/var/lib/apt <<EOT
     set -eux
     echo "Building the application jar..."
-    javac --enable-preview -verbose -g -parameters -Xlint:all -Xdoclint:none -Werror \
+    javac --enable-preview \
+          -verbose \
+          -g \
+          -parameters \
+          -Xlint:all \
+          -Xdoclint:none \
+          -Werror \
           --release ${JDK_VERSION} \
           src/*.java \
           -d .
@@ -95,12 +101,12 @@ RUN <<EOT
           --compress=2 \
           --output $DIST
 
-  # Create default CDS archive for jlinked runtime and verify it \
+  # Create default CDS archive for jlinked runtime and verify it
   # https://malloc.se/blog/zgc-jdk15#class-data-sharing
-  $DIST/bin/java -XX:+UseZGC -Xshare:dump \
+  $DIST/bin/java -XX:+UseZGC -Xshare:dump
 
   # Check if it worked, this will fail if it can't map the archive (lib/server/[classes.jsa,classes_nocoops.jsa])
-  $DIST/bin/java -XX:+UseZGC -Xshare:on --version \
+  $DIST/bin/java -XX:+UseZGC -Xshare:on --version
 
   # List all modules included in the custom java runtime
   $DIST/bin/java --list-modules

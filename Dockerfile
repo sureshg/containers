@@ -122,9 +122,9 @@ RUN <<EOT
   sleep 1 && \
   curl -fsSL http://localhost/test && \
   curl -fsSL http://localhost/shutdown || echo "Shutdown completed!"
-
   # Give some time to generate the CDS archive
   sleep 1
+
   du -kcsh * | sort -rh
   du -kcsh $DIST
 EOT

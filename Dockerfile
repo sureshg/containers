@@ -94,7 +94,7 @@ RUN <<EOT
  echo "Creating custom JDK runtime image..."
  JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"
  $JAVA_HOME/bin/jlink \
-          --add-modules="jdk.crypto.ec,$(cat java.modules)" \
+          --add-modules="jdk.crypto.ec,jdk.incubator.concurrent,$(cat java.modules)" \
           --strip-debug \
           --no-man-pages \
           --no-header-files \
@@ -138,8 +138,8 @@ EOT
 ##### App Image #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest --target openjdk .
 # DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
-# docker run -it --rm --entrypoint "/bin/bash" --pull always sureshg/app:latest -c "id; pwd"
 # docker run -it --rm -p 8080:80 sureshg/app:latest
+# docker run -it --rm --entrypoint "/bin/bash" --pull always sureshg/app:latest -c "id; pwd"
 FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base-debian11:nonroot as openjdk
 # FROM gcr.io/distroless/java-base:latest AS openjdk
 # FROM debian:stable-slim AS openjdk
@@ -175,11 +175,14 @@ COPY --link --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
 CMD ["java", \
      "--show-version", \
      "--enable-preview", \
+     "--enable-native-access=ALL-UNNAMED", \
      # "-Xlog:cds", \
      "-XX:+UseZGC", \
      "-XX:+PrintCommandLineFlags", \
      "-XX:+AutoCreateSharedArchive", \
      "-XX:SharedArchiveFile=app.jsa", \
+     "-XX:MaxRAMPercentage=0.8", \
+     "-Djava.security.egd=file:/dev/./urandom", \
      "-jar", "app.jar"]
 
 EXPOSE 80/tcp
@@ -233,19 +236,25 @@ ENTRYPOINT ["java", "--show-version", "-jar", "app.jar"]
 FROM ghcr.io/graalvm/native-image:latest as graalvm
 
 WORKDIR /app
-COPY App.java /app/App.java
+COPY src /app
 
-RUN javac App.java \
-    && native-image \
+RUN javac App.java && \
+    native-image \
     --static \
     --no-fallback \
-    --allow-incomplete-classpath \
+    --native-image-info \
+    --link-at-build-time \
     --install-exit-handlers \
+    --report-unsupported-elements-at-runtime \
     -H:+ReportExceptionStackTraces \
+    -J--add-modules -JALL-SYSTEM \
     App \
     httpserver
 
 ##### Static App Image #####
+# DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --no-cache --target graalvm-static .
+# docker run -it --rm -p 8080:80 sureshg/graalvm-static
+# dive sureshg/graalvm-static
 FROM scratch as graalvm-static
 # gcr.io/distroless/(static|base)
 COPY --from=graalvm /app/httpserver /
@@ -254,13 +263,15 @@ EXPOSE 80/tcp
 
 
 ##### Jshell image #####
-# nerdctl build -t jshell --no-cache --target jshell .
-# nerdctl run -it --rm -e TZ="UTC" jshell
-FROM openjdk:18-alpine as jshell
+# DOCKER_BUILDKIT=1 docker build -t sureshg/jshell --no-cache --target jshell .
+# docker run -it --rm -e TZ="UTC" sureshg/jshell
+FROM azul/zulu-openjdk-alpine:19 as jshell
 
 ENV TZ "PST8PDT"
-RUN echo "System.out.println(TimeZone.getDefault().getID());" >> app.jsh
-RUN echo "/exit" >> app.jsh
+RUN cat <<EOT > app.jsh
+System.out.println(TimeZone.getDefault().getID());
+/exit
+EOT
 
 CMD ["jshell", "--show-version", "--enable-preview", "--startup", "JAVASE", "--feedback", "concise", "app.jsh"]
 
@@ -270,7 +281,9 @@ FROM jre-build as jlink
 
 
 ##### Envoy proxy #####
-FROM envoyproxy/envoy:v1.20-latest as envoy
+# DOCKER_BUILDKIT=1 docker build -t sureshg/envoy-dev --target envoy .
+# docker run -it --rm sureshg/envoy-dev
+FROM envoyproxy/envoy-dev:latest as envoy
 # COPY --chown=app ...
 COPY config/envoy.yaml /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log
@@ -278,9 +291,9 @@ CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy
 
 #### NetCat Webserver
 # DOCKER_BUILDKIT=1 docker build -t sureshg/netcat-server --target netcat .
-# docker run -p 8080:80 -e PORT=80 -it sureshg/netcat-server
+# docker run -p 8080:80 -e PORT=80 -it --rm sureshg/netcat-server
 FROM alpine as netcat
-ENTRYPOINT while :; do nc -k -l -p $PORT -e sh -c 'echo -e "HTTP/1.1 200 OK\n\n Hello, world $(date).\n$(env)"'; done
+ENTRYPOINT while :; do nc -k -l -p $PORT -e sh -c 'echo -e "HTTP/1.1 200 OK\n\nHello, world $(date)\n---- OS ----\n$(cat /etc/os-release)\n---- Env ----\n$(env)"'; done
 
 
 # DOCKER_BUILDKIT=1 docker build -t sureshg/tools --target tools .
@@ -290,6 +303,10 @@ FROM nicolaka/netshoot:latest as tools
 ENTRYPOINT ["sh", "-c"]
 CMD ["echo Q | openssl s_client --connect suresh.dev:443"]
 
+
+#### Run Python script as part of build
+# DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/py-script --target python .
+# docker run -it --rm sureshg/py-script
 FROM python:slim AS python
 
 ARG APP_DIR

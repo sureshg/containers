@@ -245,7 +245,6 @@ RUN javac App.java && \
     --native-image-info \
     --link-at-build-time \
     --install-exit-handlers \
-    --report-unsupported-elements-at-runtime \
     -H:+ReportExceptionStackTraces \
     -J--add-modules -JALL-SYSTEM \
     App \

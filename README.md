@@ -13,7 +13,7 @@
    ```bash
    # Install Rancher Desktop and Select containerd as runtime.
    $ sudo docker run --privileged --rm tonistiigi/binfmt --install all
-   $ LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima" /Applications/Rancher\ Desktop.app/Contents/Resources/resources/darwin/lima/bin/limactl shell 0
+   $ rdctl shell
       $ ls -1 /proc/sys/fs/binfmt_misc/qemu*
         /proc/sys/fs/binfmt_misc/qemu-aarch64
         /proc/sys/fs/binfmt_misc/qemu-arm
@@ -39,19 +39,17 @@
  - Hostnames to access the `Rancher Desktop` host.
 
    ```markdown
-   * 192.168.5.2 (Lima/qemu gateway address)
    * host.docker.internal  
    * host.lima.internal
    * host.rancher-desktop.internal
-   * host.k3d.internal
    ```
  - Update [nerdctl][2] on [Rancher Desktop][3]
 
    ```bash
-   $ LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima" "/Applications/Rancher Desktop.app/Contents/Resources/resources/darwin/lima/bin/limactl" shell 0
-   $ sudo apk add curl
-   $ curl -sfL https://github.com/containerd/nerdctl/releases/download/v0.13.0/nerdctl-0.13.0-linux-amd64.tar.gz | sudo tar xz -C /usr/local/bin -f -
-   $ nerdctl --version
+   $ rdctl shell
+     $ sudo apk add curl
+     $ curl -sfL https://github.com/containerd/nerdctl/releases/download/v0.13.0/nerdctl-0.13.0-linux-amd64.tar.gz | sudo tar xz -C /usr/local/bin -f -
+     $ nerdctl --version
    ```
 
 ## Resources

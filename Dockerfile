@@ -228,7 +228,7 @@ EOT
 RUN <<EOT
   set -eux
   # ARCH="$(dpkg --print-architecture)"; \
-   case "${TARGETARCH}" in
+  case "${TARGETARCH}" in
          amd64|x86_64)
            SHA256_SUM='2ebd13ca0dd0a3f20c49b99c12b72e376b6c371975f734403048ddf3d7b51507'
            BINARY_URL='https://chriswhocodes.com/hsdis/hsdis-amd64.so'
@@ -241,12 +241,12 @@ RUN <<EOT
            echo "Unsupported arch: ${TARGETARCH}"
            exit 1
            ;;
-   esac;
-   HSDIS_FILE="${BINARY_URL##*/}"
-   echo "Downloading ${BINARY_URL} ..."
-   curl --progress-bar --request GET -L --url "${BINARY_URL}" --output "${HSDIS_FILE}"
-   echo "${SHA256_SUM} $HSDIS_FILE" | sha256sum -c -
-   cp $HSDIS_FILE $JAVA_HOME/lib/server
+  esac;
+  HSDIS_FILE="${BINARY_URL##*/}"
+  echo "Downloading ${BINARY_URL} ..."
+  curl --progress-bar --request GET -L --url "${BINARY_URL}" --output "${HSDIS_FILE}"
+  echo "${SHA256_SUM} $HSDIS_FILE" | sha256sum -c -
+  cp $HSDIS_FILE $JAVA_HOME/lib/server
 EOT
 
 ENTRYPOINT ["java", "--show-version", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]

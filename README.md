@@ -16,6 +16,16 @@ $ docker run -it --rm -p 8080:80 sureshg/app:latest
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --target graalvm-static .
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-static
 $ curl http://localhost:8080
+
+# OpenJDK HSDIS image to print assembly
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-hsdis:latest --target openjdk-hsdis .
+$ docker run \
+        -it \
+        --rm \
+        --volume "$(PWD)":/app \
+        --workdir /app \
+        --publish 8080:8080 \
+        sureshg/openjdk-hsdis:latest src/App.java
 ```
 
 ### Misc

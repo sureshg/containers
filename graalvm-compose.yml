@@ -10,7 +10,7 @@ services:
       context: .
       target: graalvm-static
       args:
-        JDK_VERSION: 17
+        JDK_VERSION: 19
     platform: linux/amd64
     volumes:
       - ./:/src:rw
@@ -26,7 +26,7 @@ services:
       context: .
       target: graalvm-static
       args:
-        JDK_VERSION: 17
+        JDK_VERSION: 19
     platform: linux/arm64
     volumes:
       - ./:/src:rw

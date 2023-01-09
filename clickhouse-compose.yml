@@ -71,7 +71,7 @@ services:
   #  #   replicas: 1
   #
   db-data:
-    image: openjdk:18-slim
+    image: openjdk:21-slim
     restart: always
     volumes:
       - clickhouse-data:/data/clickhouse/data
@@ -82,7 +82,7 @@ services:
       - "8000:8000"
     networks:
       - app-network
-    command: [ "java", "-m", "jdk.httpserver", "-b", "0.0.0.0", "-d", "/data" ]
+    command: [ "jwebserver", "-b", "0.0.0.0", "-d", "/data" ]
     depends_on:
       - clickhouse-server
 

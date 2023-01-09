@@ -4,7 +4,7 @@
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 # Global build args
-ARG JDK_VERSION=20
+ARG JDK_VERSION=21
 ARG APP_USER=app
 ARG APP_DIR="/app"
 ARG APP_JAR="app.jar"
@@ -41,14 +41,21 @@ ARG SRC_DIR
 
 # Install objcopy for jlink
 RUN <<EOT
+    # set -o errexit -o nounset -o errtrace -o pipefail
     set -eux
     echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
     DEBIAN_FRONTEND=noninteractive
     apt -y update
     apt -y upgrade
-    apt -y install --no-install-recommends binutils curl tzdata ca-certificates
-    # apt -y install freetype fontconfig
-    rm -rf /var/lib/apt/lists/*
+    apt -y install \
+           --no-install-recommends \
+           binutils curl \
+           tzdata locales ca-certificates
+    # wget vim unzip freetype fontconfig \
+    # make gcc g++ libc++-dev \
+    # openssl libssl-dev libcrypto++-dev libz.a
+
+    rm -rf /var/lib/apt/lists/* /tmp/*
     apt -y clean
     mkdir -p ${APP_DIR}
 EOT
@@ -92,13 +99,16 @@ RUN <<EOT
        *.jar > java.modules
 
  echo "Creating custom JDK runtime image..."
- JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"
+ # JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"
  $JAVA_HOME/bin/jlink \
+          --verbose \
+          --module-path ${JAVA_HOME}/jmods \
           --add-modules="jdk.crypto.ec,jdk.incubator.concurrent,$(cat java.modules)" \
+          --compress=2 \
           --strip-debug \
+          --strip-java-debug-attributes \
           --no-man-pages \
           --no-header-files \
-          --compress=2 \
           --output $DIST
 
   # Create default CDS archive for jlinked runtime and verify it
@@ -121,7 +131,7 @@ RUN <<EOT
         -jar ${APP_JAR} & \
   sleep 1 && \
   curl -fsSL http://localhost/test && \
-  curl -fsSL http://localhost/shutdown || echo "Shutdown completed!"
+  curl -fsSL http://localhost/shutdown || echo "App CDS archive generation completed!"
   # Give some time to generate the CDS archive
   sleep 1
 
@@ -136,7 +146,7 @@ COPY <<-EOT ${APP_DIR}/info
 EOT
 
 ##### App Image #####
-# DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest --no-cache  --pull --target openjdk .
 # DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
 # docker run -it --rm -p 8080:80 sureshg/app:latest
 # docker run -it --rm --entrypoint "/bin/bash" --pull always sureshg/app:latest -c "id; pwd"
@@ -238,24 +248,35 @@ FROM ghcr.io/graalvm/native-image:latest as graalvm
 WORKDIR /app
 COPY src /app
 
-RUN javac App.java && \
-    native-image \
+RUN <<EOT
+# export TOOLCHAIN_DIR="${PWD}/x86_64-linux-musl-native"
+# export CC="${TOOLCHAIN_DIR}/bin/gcc"
+# export PATH="${TOOLCHAIN_DIR}/bin:${PATH}"
+# native-image --static --libc=musl -m jdk.httpserver -o jwebserver.static
+# upx --lzma --best jwebserver.static -o jwebserver.static.upx
+javac App.java
+native-image \
     --static \
     --no-fallback \
-    --native-image-info \
+    --enable-preview \
+    --enable-https \
     --link-at-build-time \
     --install-exit-handlers \
+    --native-image-info \
     -H:+ReportExceptionStackTraces \
+    -Djava.awt.headless=false \
     -J--add-modules -JALL-SYSTEM \
-    App \
-    httpserver
+    -o httpserver App
+EOT
 
 ##### Static App Image #####
-# DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --no-cache --target graalvm-static .
+# DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --no-cache  --pull  --target graalvm-static .
 # docker run -it --rm -p 8080:80 sureshg/graalvm-static
 # dive sureshg/graalvm-static
 FROM scratch as graalvm-static
-# gcr.io/distroless/(static|base)
+# FROM gcr.io/distroless/(static|base) as graalvm-static
+# FROM cgr.dev/chainguard/graalvm-native-image-base:latest as graalvm-static
+
 COPY --from=graalvm /app/httpserver /
 CMD ["./httpserver"]
 EXPOSE 80/tcp
@@ -317,3 +338,22 @@ import time
 print("Hello ${APP_DIR}/${APP_JAR}")
 time.sleep(1)
 EOT
+
+#### C static binary
+FROM cgr.dev/chainguard/gcc-glibc as gcc-glibc-build
+
+COPY <<EOF /app.c
+#include <stdio.h>
+int main() { printf("App Static Image!"); }
+EOF
+
+RUN cc -static /app.c -o /app
+
+#### Chainguard static image
+# DOCKER_BUILDKIT=1 docker build -t sureshg/cgr-static --target cgr-static .
+# docker run -it --rm sureshg/cgr-static
+FROM cgr.dev/chainguard/static:latest as cgr-static
+# FROM cgr.dev/chainguard/glibc-dynamic as cgr-dynamic
+
+COPY --from=gcc-glibc-build /app /app
+CMD ["/app"]

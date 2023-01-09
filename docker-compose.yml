@@ -7,7 +7,7 @@ services:
       context: .
       target: openjdk
       args:
-        JDK_VERSION: 17
+        JDK_VERSION: 21
     platform: x86-64
     restart: always
     working_dir: /app
@@ -35,7 +35,7 @@ services:
       context: .
       target: openjdk
       args:
-        JDK_VERSION: 17
+        JDK_VERSION: 21
     platform: arm64
     restart: always
     working_dir: /app
@@ -79,7 +79,7 @@ services:
 
   db-files:
     container_name: pgdata-files
-    image: openjdk:18-slim
+    image: openjdk:21-slim
     restart: always
     volumes:
       - pg-data:/data/pg
@@ -89,7 +89,7 @@ services:
       - "8000:8000"
     networks:
       - app-network
-    command: [ "java", "-m", "jdk.httpserver", "-b", "0.0.0.0", "-d", "/data" ]
+    command: [ "jwebserver", "-b", "0.0.0.0", "-d", "/data" ]
     depends_on:
       - db
 

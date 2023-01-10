@@ -77,7 +77,6 @@ jobs:
           file: ./Dockerfile
           build-args: APP_USER=app
           target: graalvm-static
-          platforms: linux/amd64,linux/arm64
           no-cache: false
           push: ${{ startsWith(github.ref, 'refs/tags/') }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:native-image

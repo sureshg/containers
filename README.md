@@ -83,6 +83,6 @@ $ docker run \
 [lint_url]: https://hadolint.github.io/hadolint/
 [lint_img]: https://img.shields.io/badge/Dockerfile%20Linter-%E2%9D%A4-2596ec.svg?logo=Docker&style=for-the-badge&logoColor=2596ec
 
+[openjdk_app_img]: https://ghcr-badge.deta.dev/sureshg/containers/size?tag=openjdk-latest&label=OpenJDK%20App
+[nativeimage_app_img]: https://ghcr-badge.deta.dev/sureshg/containers/size?tag=nativeimage-latest&label=NativeImage%20App
 [container-images]: https://github.com/sureshg/containers/pkgs/container/containers
-[openjdk_app_img]:  https://ghcr-badge.deta.dev/sureshg/containers/size?tag=openjdk-latest&label=OpenJDK
-[nativeimage_app_img]: https://ghcr-badge.deta.dev/sureshg/containers/size?tag=nativeimage-latest&label=NativeImage

@@ -249,7 +249,7 @@ RUN <<EOT
   cp $HSDIS_FILE $JAVA_HOME/lib/server
 EOT
 
-ENTRYPOINT ["java", "--show-version", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
+ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
 
 
 ##### GraalVM NativeImage Build #####

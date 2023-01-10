@@ -2,35 +2,31 @@ name: Build & Publish Container
 
 on:
   schedule:
-    - cron: '23 22 * * 6'
+    - cron: '31 22 * * *'
   push:
-    branches: [ main ]
-    # Publish semver tags as releases.
+    branches: [ "main" ]
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      # This is used to complete the identity challenge
-      # with sigstore/fulcio when running outside of PRs.
       id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Add support for more platforms with QEMU (optional)
       - name: Set up QEMU
         id: qemu
         uses: docker/setup-qemu-action@v2
@@ -39,14 +35,8 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Available platforms
+      - name: Available Platforms
         run: echo "::notice title=Available platforms::${{ steps.buildx.outputs.platforms }}"
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Log into registry ${{ env.REGISTRY }}
         if: startsWith(github.ref, 'refs/tags/')
@@ -57,35 +47,56 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        id: build-and-push
+      - name: Extract Docker metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push OpenJDK App image
+        id: openjdk-build
         uses: docker/build-push-action@v3
         with:
           context: .
           file: ./Dockerfile
           build-args: APP_USER=app
           target: openjdk
+          platforms: linux/amd64,linux/arm64
           no-cache: false
           push: ${{ startsWith(github.ref, 'refs/tags/') }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push GraalVM native-image
+        id: native-image-build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          build-args: APP_USER=app
+          target: graalvm-static
+          platforms: linux/amd64,linux/arm64
+          no-cache: false
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:native-image
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Install cosign
         if: startsWith(github.ref, 'refs/tags/')
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: 'v1.6.0'
+          cosign-release: 'v1.11.0'
 
-      # Sign the resulting Docker image digest.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
       - name: Sign the published Docker image
         if: startsWith(github.ref, 'refs/tags/')
-        # This step uses the identity token to provision an ephemeral certificate
-        # against the sigstore community Fulcio instance.
-        run: cosign sign ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
         env:
           COSIGN_EXPERIMENTAL: "true"
+        # This step uses the identity token to provision an ephemeral certificate
+        # against the sigstore community Fulcio instance.
+        run: |
+          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk" | xargs -I {} cosign sign {}@${{ steps.openjdk-build.outputs.digest }}
+          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:native-image" | xargs -I {} cosign sign {}@${{ steps.native-image-build.outputs.digest }}

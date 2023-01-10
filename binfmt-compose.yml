@@ -1,18 +1,17 @@
 version: "3.8"
 
+# docker compose -f binfmt-compose.yml up
 services:
   binfmt:
     container_name: binfmt
     image: tonistiigi/binfmt:latest
     privileged: true
-    restart: always
     command: [ "--install", "all" ]
 
   binfmt-list:
     container_name: binfmt-list
     image: busybox
     privileged: true
-    restart: always
     volumes:
       - /proc/sys/fs/binfmt_misc:/binfmt
     command: [ "ls", "-1", "/binfmt" ]

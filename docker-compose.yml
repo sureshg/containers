@@ -1,14 +1,12 @@
 version: "3.8"
 
+# docker compose -f docker-compose.yml up
 services:
   svc1:
     container_name: svc1
     build:
       context: .
       target: openjdk
-      args:
-        JDK_VERSION: 21
-    platform: x86-64
     restart: always
     working_dir: /app
     volumes:
@@ -19,10 +17,11 @@ services:
       - "8080:80"
     networks:
       - app-network
-  # privileged: true
-  # cap_add:
-  #   - NET_ADMIN
-  #   - SYS_ADMIN
+    # platform: linux/amd64
+    # privileged: true
+    # cap_add:
+    #   - NET_ADMIN
+    #   - SYS_ADMIN
     depends_on:
       - db
   # tmpfs:
@@ -34,9 +33,6 @@ services:
     build:
       context: .
       target: openjdk
-      args:
-        JDK_VERSION: 21
-    platform: arm64
     restart: always
     working_dir: /app
     volumes:
@@ -49,10 +45,11 @@ services:
       - app-network
     depends_on:
       - db
+    # platform: linux/arm64
 
   db:
     container_name: postgres
-    image: postgres:14-alpine
+    image: postgres:alpine
     restart: always
     env_file: env/dev.env
     volumes:
@@ -64,7 +61,7 @@ services:
 
   db-admin:
     container_name: pgadmin
-    image: dpage/pgadmin4:6
+    image: dpage/pgadmin4:latest
     restart: always
     env_file: env/pgadmin.env
     volumes:
@@ -108,7 +105,8 @@ services:
       - "9000:8080"
     networks:
       - app-network
-    restart: always
+    # Disabling until it fixes on M1
+    # restart: always
 
 volumes:
   pg-data:

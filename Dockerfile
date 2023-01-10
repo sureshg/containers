@@ -246,7 +246,7 @@ RUN <<EOT
   echo "Downloading ${BINARY_URL} ..."
   curl --progress-bar --request GET -L --url "${BINARY_URL}" --output "${HSDIS_FILE}"
   echo "${SHA256_SUM} $HSDIS_FILE" | sha256sum -c -
-  cp $HSDIS_FILE $JAVA_HOME/lib/server
+  mv $HSDIS_FILE $JAVA_HOME/lib/server
 EOT
 
 ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]

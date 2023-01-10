@@ -1,13 +1,11 @@
 version: "3.8"
 
-# DOCKER_BUILDKIT=1  docker compose -f tcpdump-compose.yml up
+# docker compose -f tcpdump-compose.yml up
 services:
   app:
     build:
       context: .
       target: openjdk
-      args:
-        JDK_VERSION: 21
     container_name: app
     restart: always
     volumes:

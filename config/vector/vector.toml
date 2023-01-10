@@ -9,19 +9,19 @@ address = "0.0.0.0:8686"
 
 # Original source
 [sources.generate_syslog]
-type = "generator"
+type = "demo_logs"
 format = "syslog"
 count = 100
-interval=0.5
+interval = 0.5
 
 # Enrich with more data.
 [transforms.add_host]
 inputs = ["generate_syslog"]
-type = "add_fields"
-
-[transforms.add_host.fields]
-host = "${HOSTNAME}" # or "$HOSTNAME"
-env = "${ENV:-dev}" # default value when not present
+type = "remap"
+source = '''
+  .host = "${HOSTNAME}"
+  .env = "${ENV:-dev}"
+'''
 
 # Additional  transformation
 [transforms.remap_syslog]

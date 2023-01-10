@@ -1,8 +1,8 @@
 version: "3.8"
 
-# DOCKER_BUILDKIT=1  docker compose -f graalvm-compose.yml up
-# DOCKER_BUILDKIT=1  docker compose -f graalvm-compose.yml up --build native-image-amd64
-# DOCKER_BUILDKIT=1  docker compose -f graalvm-compose.yml up --build native-image-arm64
+# docker compose -f graalvm-compose.yml up
+# docker compose -f graalvm-compose.yml up --build native-image-amd64
+# docker compose -f graalvm-compose.yml up --build native-image-arm64
 services:
   native-image-amd64:
     container_name: app-linux-amd64

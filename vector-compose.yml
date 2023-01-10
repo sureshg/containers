@@ -1,5 +1,6 @@
 version: "3.8"
 
+# docker compose -f vector-compose.yml up
 services:
   vector:
     container_name: vector

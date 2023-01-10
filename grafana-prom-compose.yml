@@ -1,5 +1,6 @@
 version: "3.8"
 
+# docker compose -f grafana-prom-compose.yml up
 services:
   prometheus:
     container_name: prometheus
@@ -32,7 +33,7 @@ services:
     container_name: cadvisor
     ports:
       - "8080:8080"
-    restart: unless-stopped
+    # restart: unless-stopped
     volumes:
       - "/:/rootfs:ro"
       - "/var/run:/var/run:ro"

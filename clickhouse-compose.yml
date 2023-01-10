@@ -1,5 +1,6 @@
 version: "3.8"
 
+# docker compose -f clickhouse-compose.yml up
 services:
 
   clickhouse-server:
@@ -30,12 +31,12 @@ services:
   #      - zookeeper
 
   grafana:
-    image: grafana/grafana:8.2.5
+    image: grafana/grafana:latest
     ports:
       - "3000:3000"
     environment:
       - GF_INSTALL_PLUGINS=grafana-clock-panel,vertamedia-clickhouse-datasource,natel-plotly-panel
-    #      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=vertamedia-clickhouse-datasource
+    # - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=vertamedia-clickhouse-datasource
     restart: always
     networks:
       - app-network

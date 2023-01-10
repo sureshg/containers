@@ -62,6 +62,7 @@ jobs:
           target: openjdk
           platforms: linux/amd64,linux/arm64
           no-cache: false
+          push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -77,7 +78,8 @@ jobs:
           build-args: APP_USER=app
           target: graalvm-static
           no-cache: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:native-image-latest
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nativeimage-latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -97,4 +99,4 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: |
           echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest" | xargs -I {} cosign sign {}@${{ steps.openjdk-build.outputs.digest }}
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:native-image-latest" | xargs -I {} cosign sign {}@${{ steps.native-image-build.outputs.digest }}
+          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nativeimage-latest" | xargs -I {} cosign sign {}@${{ steps.native-image-build.outputs.digest }}

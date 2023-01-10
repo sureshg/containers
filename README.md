@@ -3,6 +3,9 @@
 [![GitHub Workflow Status][gha_badge]][gha_url]
 [![Docker Linter][lint_img]][lint_url]
 
+[![OpenJDK App][openjdk_app_img]][container-images] 
+[![Native Image App][nativeimage_app_img]][container-images]
+
  Container/K8S/Compose playground using [dockerd(moby)][7]/[nerdctl][2]/[Rancher Desktop][3].
 
 ### Build & Run
@@ -79,3 +82,7 @@ $ docker run \
              
 [lint_url]: https://hadolint.github.io/hadolint/
 [lint_img]: https://img.shields.io/badge/Dockerfile%20Linter-%E2%9D%A4-2596ec.svg?logo=Docker&style=for-the-badge&logoColor=2596ec
+
+[container-images]: https://github.com/sureshg/containers/pkgs/container/containers
+[openjdk_app_img]:  https://ghcr-badge.deta.dev/sureshg/containers/size?tag=openjdk-latest&label=OpenJDK
+[nativeimage_app_img]: https://ghcr-badge.deta.dev/sureshg/containers/size?tag=nativeimage-latest&label=NativeImage

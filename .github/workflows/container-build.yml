@@ -13,7 +13,6 @@ env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  DOCKER_BUILDKIT: 1
 
 jobs:
   build:
@@ -61,7 +60,7 @@ jobs:
           file: ./Dockerfile
           build-args: APP_USER=app
           target: openjdk
-          platforms: linux/amd64,linux/arm64
+          # platforms: linux/amd64,linux/arm64
           no-cache: false
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest

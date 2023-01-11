@@ -172,8 +172,8 @@ WORKDIR ${APP_DIR}
 # USER ${APP_USER}
 
 # These copy will run concurrently on BUILDKIT.
-COPY --link --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
-COPY --link --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
+COPY --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
+COPY --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
 # COPY --link --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
 # USER nobody:nobody

@@ -370,3 +370,35 @@ import time
 print("Hello ${APP_DIR}/${APP_JAR}")
 time.sleep(1)
 EOT
+
+### SSH Server container
+# DOCKER_BUILDKIT=1 docker build -t sureshg/ssh-server --target ssh-server .
+# docker run -it --rm -p 2222:22 sureshg/ssh-server
+# ssh test@localhost -p 2222
+FROM alpine:latest as ssh-server
+
+ARG USER=test
+ARG PASS=test
+ENV HOME /home/$USER
+
+COPY <<EOF /entrypoint.sh
+#!/bin/sh
+ssh-keygen -A
+echo -e "User $(whoami) running from $(pwd) with permissions: $(sudo -l)"
+exec /usr/sbin/sshd -D -e
+EOF
+
+RUN <<EOT
+    apk add --update --no-cache openssh sudo
+    echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+    adduser -D ${USER} -h $HOME -s /bin/sh -G root -u 1000
+    echo "$USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USER}
+    chmod 0440 /etc/sudoers.d/${USER}
+
+    # "root:$(openssl rand 96 | openssl enc -A -base64)"
+    echo -n "${USER}:${PASS}" | chpasswd
+    chmod +x /entrypoint.sh
+EOT
+
+ENTRYPOINT [ "/entrypoint.sh" ]
+EXPOSE 22

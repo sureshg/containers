@@ -1,13 +1,20 @@
 name: Build & Publish Container
 
 on:
+
+  push:
+    branches:
+      - 'main'
+    tags:
+      - 'v*.*.*'
+    paths-ignore:
+      - 'README.md'
+  pull_request:
+    branches:
+      - 'main'
   schedule:
     - cron: '31 22 * * *'
-  push:
-    branches: [ "main" ]
-    tags: [ 'v*.*.*' ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -22,9 +29,21 @@ jobs:
       packages: write
       id-token: write
 
+    # strategy:
+    #   fail-fast: false
+    #    matrix:
+    #      platform: [ linux/amd64, linux/arm64 ]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Validate Dockerfile
+        if: ${{ false }}
+        uses: ghe-actions/dockerfile-validator@v1
+        with:
+          dockerfile: 'Dockerfile'
+          lint: 'hadolint'
 
       # Add support for more platforms with QEMU (optional)
       - name: Set up QEMU
@@ -34,12 +53,15 @@ jobs:
       - name: Setup Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.11.1
 
       - name: Available Platforms
         run: echo "::notice title=Available platforms::${{ steps.buildx.outputs.platforms }}"
 
       - name: Log into registry ${{ env.REGISTRY }}
-        # if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -60,30 +82,21 @@ jobs:
           file: ./Dockerfile
           build-args: APP_USER=app
           target: openjdk
-          # platforms: linux/amd64,linux/arm64
-          no-cache: false
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest
           # push: ${{ startsWith(github.ref, 'refs/tags/') }}
 
       - name: Build and push GraalVM native-image
         id: native-image-build
         uses: docker/build-push-action@v3
         with:
-          context: .
-          file: ./Dockerfile
           build-args: APP_USER=app
           target: graalvm-static
-          no-cache: false
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nativeimage-latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nativeimage-latest
 
       - name: Install cosign
         if: startsWith(github.ref, 'refs/tags/')

@@ -73,6 +73,7 @@ $ cdebug exec \
 
 ## Resources
 
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/)
 - [A collection of docker-compose files][6]
 - [Runtime privilege and Linux capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities)
 - [Runtime options with Memory, CPUs, and GPUs](https://docs.docker.com/config/containers/resource_constraints/)

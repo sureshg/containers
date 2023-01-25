@@ -51,9 +51,11 @@ RUN <<EOT
            --no-install-recommends \
            binutils curl \
            tzdata locales ca-certificates
-    # wget vim unzip freetype fontconfig \
+    # wget procps vim unzip \
+    # freetype fontconfig \
     # make gcc g++ libc++-dev \
-    # openssl libssl-dev libcrypto++-dev libz.a
+    # openssl gnupg libssl-dev libcrypto++-dev libz.a \
+    # software-properties-common
 
     rm -rf /var/lib/apt/lists/* /tmp/*
     apt -y clean
@@ -172,8 +174,8 @@ WORKDIR ${APP_DIR}
 # USER ${APP_USER}
 
 # These copy will run concurrently on BUILDKIT.
-COPY --link --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
-COPY --link --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
+COPY --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
+COPY --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
 # COPY --link --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
 # USER nobody:nobody
@@ -307,8 +309,34 @@ EOT
 CMD ["jshell", "--show-version", "--enable-preview", "--startup", "JAVASE", "--feedback", "concise", "app.jsh"]
 
 
-##### For Jlinking apps #####
-FROM jre-build as jlink
+##### Slimmer JDK using JLink #####
+# DOCKER_BUILDKIT=1 docker build -t sureshg/jdk-slim --no-cache --target jdk-slim .
+# docker run -it --rm sureshg/jdk-slim
+FROM jre-build as jdk-slim
+
+ENV JDK_SLIM /opt/java/jdk-slim
+
+RUN <<EOT
+  set -eux
+
+  # Example to change the locale
+  sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
+  locale-gen
+
+  echo "Creating slimmer JDK image..."
+  $JAVA_HOME/bin/jlink \
+        --verbose \
+        --add-modules "$(java --list-modules | sed -e 's/@[0-9].*$/,/' | tr -d \\n)" \
+        --no-man-pages \
+        --no-header-files \
+        --strip-debug \
+        --output $JDK_SLIM
+  du -ah $JDK_SLIM
+  ${JDK_SLIM}/bin/java --version
+EOT
+
+ENV TZ "PST8PDT"
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 
 #### C static binary

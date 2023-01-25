@@ -1,7 +1,6 @@
 name: Build & Publish Container
 
 on:
-
   push:
     branches:
       - 'main'
@@ -29,18 +28,13 @@ jobs:
       packages: write
       id-token: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ linux/amd64, linux/arm64 ]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Validate Dockerfile
         if: ${{ false }}
-        uses: ghe-actions/dockerfile-validator@v1
+        uses: ghe-actions/dockerfile-validator@v2
         with:
           dockerfile: 'Dockerfile'
           lint: 'hadolint'
@@ -53,9 +47,10 @@ jobs:
       - name: Setup Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: |
-            image=moby/buildkit:v0.11.1
+        # Remove this when https://github.com/docker/build-push-action/issues/761 is fixed
+        # with:
+        #  driver-opts: |
+        #    image=moby/buildkit:v0.11.0
 
       - name: Available Platforms
         run: echo "::notice title=Available platforms::${{ steps.buildx.outputs.platforms }}"
@@ -82,11 +77,12 @@ jobs:
           file: ./Dockerfile
           build-args: APP_USER=app
           target: openjdk
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
+          # push: ${{ startsWith(github.ref, 'refs/tags/') }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest
-          # push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Build and push GraalVM native-image
         id: native-image-build
@@ -94,16 +90,16 @@ jobs:
         with:
           build-args: APP_USER=app
           target: graalvm-static
-          platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nativeimage-latest
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Install cosign
         if: startsWith(github.ref, 'refs/tags/')
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: 'v1.11.0'
+          cosign-release: 'v1.13.1'
 
       - name: Sign the published Docker image
         if: startsWith(github.ref, 'refs/tags/')

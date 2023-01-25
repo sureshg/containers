@@ -1,13 +1,12 @@
-import static java.lang.System.exit;
-import static java.lang.System.out;
-
 import com.sun.net.httpserver.HttpServer;
+
 import java.net.InetSocketAddress;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Objects;
+
+import static java.lang.System.exit;
+import static java.lang.System.out;
 
 public class App {
 

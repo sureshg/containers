@@ -4,6 +4,9 @@ import static java.lang.System.out;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 public class App {
@@ -30,14 +33,15 @@ public class App {
     var isNativeMode = Objects.equals(System.getProperty("org.graalvm.nativeimage.kind", "jvm"), "executable");
     var type = isNativeMode ? "Binary" : "JVM";
 
-    var vmTime = ProcessHandle.current().info().startInstant().orElseGet(Instant::now).toEpochMilli();
+    var vmTime = ProcessHandle.current().info().startInstant().get();
     var currTime = System.currentTimeMillis();
 
+    out.println("Process started on " + ZonedDateTime.ofInstant(vmTime, ZoneId.systemDefault()));
     out.println("Starting Http Server on port " + server.getAddress().getPort() + "...");
     out.printf("Started in %d millis! (%s: %dms, App: %dms)%n",
-        (currTime - vmTime),
+        (currTime - vmTime.toEpochMilli()),
         type,
-        (start - vmTime),
+        (start - vmTime.toEpochMilli()),
         (currTime - start)
     );
   }

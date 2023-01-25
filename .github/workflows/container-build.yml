@@ -77,10 +77,9 @@ jobs:
           file: ./Dockerfile
           build-args: APP_USER=app
           target: openjdk
-          no-cache: true
-          platforms: linux/amd64,linux/arm64
+          no-cache: false
+          # platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          # push: ${{ startsWith(github.ref, 'refs/tags/') }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest
           labels: ${{ steps.meta.outputs.labels }}
@@ -91,8 +90,9 @@ jobs:
         with:
           build-args: APP_USER=app
           target: graalvm-static
-          no-cache: true
+          no-cache: false
           push: ${{ github.event_name != 'pull_request' }}
+          # push: ${{ startsWith(github.ref, 'refs/tags/') }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nativeimage-latest
           labels: ${{ steps.meta.outputs.labels }}

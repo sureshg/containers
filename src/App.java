@@ -27,12 +27,11 @@ public class App {
     });
     server.start();
 
-    var currTime = System.currentTimeMillis();
-    var vmTime = ProcessHandle.current().info().startInstant().orElseGet(Instant::now)
-        .toEpochMilli();
-
     var isNativeMode = Objects.equals(System.getProperty("org.graalvm.nativeimage.kind", "jvm"), "executable");
     var type = isNativeMode ? "Binary" : "JVM";
+
+    var vmTime = ProcessHandle.current().info().startInstant().orElseGet(Instant::now).toEpochMilli();
+    var currTime = System.currentTimeMillis();
 
     out.println("Starting Http Server on port " + server.getAddress().getPort() + "...");
     out.printf("Started in %d millis! (%s: %dms, App: %dms)%n",

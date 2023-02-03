@@ -5,6 +5,7 @@
 
 # Global build args
 ARG JDK_VERSION=21
+ARG GRAAL_JDK_VERSION=17
 ARG APP_USER=app
 ARG APP_DIR="/app"
 ARG APP_JAR="app.jar"
@@ -29,10 +30,10 @@ ARG JDK_VERSION
 ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
+# ARG TARGETPLATFORM=linux/aarch64
 ARG APP_DIR
 ARG APP_JAR
 ARG SRC_DIR
-# ARG TARGETPLATFORM=linux/aarch64
 
 # Set HTTP(s) Proxy
 # ENV HTTP_PROXY="http://proxy.test.com:8080" \
@@ -78,7 +79,6 @@ RUN --mount=type=bind,target=.,rw \
           -parameters \
           -Xlint:all \
           -Xdoclint:none \
-          -Werror \
           --release ${JDK_VERSION} \
           src/*.java \
           -d .
@@ -101,12 +101,12 @@ RUN <<EOT
        *.jar > ${APP_DIR}/java.modules
 
  echo "Creating custom JDK runtime image..."
- INCUBATOR_MODULES="jdk.incubator.concurrent,jdk.incubator.vector"
+ INCUBATOR_MODULES=$(java --list-modules | grep -i incubator | sed 's/@.*//' | paste -sd "," - )
  # JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"
  $JAVA_HOME/bin/jlink \
           --verbose \
           --module-path ${JAVA_HOME}/jmods \
-          --add-modules="jdk.crypto.ec,${INCUBATOR_MODULES},$(cat ${APP_DIR}/java.modules)" \
+          --add-modules="$(cat ${APP_DIR}/java.modules)" \
           --compress=2 \
           --strip-debug \
           --strip-java-debug-attributes \
@@ -150,12 +150,11 @@ COPY <<-EOT ${APP_DIR}/info
 EOT
 
 ##### App Image #####
-# DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest --no-cache  --pull --target openjdk .
-# DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
-# docker run -it --rm -p 8080:80 sureshg/app:latest
-# docker run -it --rm --entrypoint "/bin/bash" --pull always sureshg/app:latest -c "id; pwd"
-FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base-debian11:nonroot as openjdk
-# FROM gcr.io/distroless/java-base:latest AS openjdk
+# DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest --no-cache  --pull --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
+# docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
+FROM  gcr.io/distroless/java-base-debian11:nonroot as openjdk
+# FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base:latest AS openjdk
 # FROM debian:stable-slim AS openjdk
 
 ARG APP_DIR
@@ -163,6 +162,7 @@ ARG APP_DIR
 # Declaration and usage of same ENV var should be in two ENV instructions.
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV APP_DIR_ENV=${APP_DIR}
 #   LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8' \
 #   TZ "PST8PDT"
 
@@ -184,7 +184,7 @@ COPY --link --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
 # Shell vs Exec - https://docs.docker.com/engine/reference/builder/#run
 # ENTRYPOINT ["java"]
 
-# Both ARG and ENV are not expanded in ENTRYPOINT or CMD
+# Both ARG and ENV (eg: APP_DIR_ENV) are not expanded in ENTRYPOINT or CMD
 # https://stackoverflow.com/a/36412891/416868
 CMD ["java", \
      "--show-version", \
@@ -197,7 +197,8 @@ CMD ["java", \
      "-XX:SharedArchiveFile=app.jsa", \
      "-XX:MaxRAMPercentage=0.8", \
      "-Djava.security.egd=file:/dev/./urandom", \
-     "-jar", "app.jar"]
+     "-jar", "app.jar", \
+     "arg1", "${APP_DIR_ENV}" ]
 
 EXPOSE 80/tcp
 
@@ -257,6 +258,8 @@ ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
 ##### GraalVM NativeImage Build #####
 FROM ghcr.io/graalvm/native-image:latest as graalvm
 
+ARG GRAAL_JDK_VERSION
+
 WORKDIR /app
 COPY src /app
 
@@ -266,7 +269,10 @@ RUN <<EOT
 # export PATH="${TOOLCHAIN_DIR}/bin:${PATH}"
 # native-image --static --libc=musl -m jdk.httpserver -o jwebserver.static
 # upx --lzma --best jwebserver.static -o jwebserver.static.upx
-javac App.java
+javac --enable-preview \
+      --release ${GRAAL_JDK_VERSION} \
+      App.java
+
 native-image \
     --static \
     --no-fallback \
@@ -399,34 +405,52 @@ print("Hello ${APP_DIR}/${APP_JAR}")
 time.sleep(1)
 EOT
 
-### SSH Server container
+### SSH Server container with sysstat (sar)
 # DOCKER_BUILDKIT=1 docker build -t sureshg/ssh-server --target ssh-server .
 # docker run -it --rm -p 2222:22 sureshg/ssh-server
 # ssh test@localhost -p 2222
-FROM alpine:latest as ssh-server
+FROM debian:stable-slim as ssh-server
 
 ARG USER=test
 ARG PASS=test
 ENV HOME /home/$USER
 
 COPY <<EOF /entrypoint.sh
-#!/bin/sh
+#!/bin/bash
+set -e
+echo "[Entrypoint] OpenSSH Server, args: "\$@""
+echo "Running as $(whoami) user from $(pwd) with permissions: $(sudo -l)"
+
+echo "Collecting system activity report (sar) for 3 seconds..."
+for i in \`seq 1 3\` ; do /usr/lib/sysstat/debian-sa1 1 1 ; sleep 1 ; done
+
+echo "Starting the ssh Server..."
 ssh-keygen -A
-echo -e "User $(whoami) running from $(pwd) with permissions: $(sudo -l)"
-exec /usr/sbin/sshd -D -e
+exec "\$@"
 EOF
 
 RUN <<EOT
-    apk add --update --no-cache openssh sudo
-    echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
-    adduser -D ${USER} -h $HOME -s /bin/sh -G root -u 1000
+    apt -y update
+    apt -y install \
+       --no-install-recommends \
+       openssh-server sudo sysstat
+
+    useradd -rm -d ${HOME}  -s /bin/bash -g root -G sudo -u 1000 ${USER}
+    echo -n "${USER}:${PASS}" | chpasswd
     echo "$USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USER}
     chmod 0440 /etc/sudoers.d/${USER}
 
-    # "root:$(openssl rand 96 | openssl enc -A -base64)"
-    echo -n "${USER}:${PASS}" | chpasswd
+    # Entrypoint script should be executable
     chmod +x /entrypoint.sh
+    # Start SSH service
+    service ssh start
+
+    # Enable SAR
+    sed -i 's/ENABLED="false"/ENABLED="true"/g' /etc/default/sysstat
+    service sysstat restart
 EOT
 
 ENTRYPOINT [ "/entrypoint.sh" ]
+# HEALTHCHECK --interval=5m --timeout=3s CMD /healthcheck.sh
 EXPOSE 22
+CMD [ "/usr/sbin/sshd", "-D" ]

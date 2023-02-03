@@ -12,8 +12,8 @@ Container/K8S/Compose playground using [dockerd(moby)][7]/[nerdctl][2]/[Rancher 
 
 ```bash
 # Build OpenJDK jLinked image with App CDS
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/app:latest --target openjdk .
-$ docker run -it --rm -p 8080:80 sureshg/app:latest
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest --target openjdk .
+$ docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
 
 # Build GraalVM native static image
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --target graalvm-static .
@@ -28,17 +28,84 @@ $ docker run \
         --volume "$(PWD)":/app \
         --workdir /app \
         --publish 8080:8080 \
-        sureshg/openjdk-hsdis:latest src/App.java
-        
-# Debug distroless images
-$ brew install cdebug         
+        sureshg/openjdk-hsdis:latest src/App.java                       
+```
+
+### Multi-Platform Builds
+
+The following commands are used to build multi-platform images locally using `Docker Buildx` on [Rancher Desktop][3].
+
+```bash
+# Create a new buildx builder instance
+$ docker buildx create --name=buildkit-container --driver=docker-container
+# docker buildx use buildkit-container
+# docker buildx inspect
+# docker buildx rm buildkit-container
+
+# Build images for all platforms
+$ docker buildx \
+         --builder buildkit-container \
+         build \
+         --platform=linux/amd64,linux/arm64 \
+         --pull \
+         --no-cache  \
+         --target openjdk \
+         -t sureshg/openjdk-app:latest .
+
+# Load just one platform (ARM64)
+$ docker buildx \
+         --builder buildkit-container \
+         build \
+         --load \
+         --platform=linux/arm64 \
+         --target openjdk \
+         -t sureshg/openjdk-app:latest .
+
+# Load another platform with a different tag (AMD64)
+$ docker buildx \
+         --builder buildkit-container \
+         build \
+         --load \
+         --platform=linux/amd64 \
+         --target openjdk \
+         -t sureshg/openjdk-app:latest-amd64 .
+
+# Push both platforms as one image manifest list
+$ docker buildx \
+         --builder buildkit-container \
+         build \
+         --push \
+         --platform=linux/arm64,linux/amd64 \
+         --target openjdk \
+         -t sureshg/openjdk-app:latest .  
+         
+# Run the images
+$ docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
+$ docker run -it --rm --platform linux/amd64 -p 8080:80 sureshg/openjdk-app:latest-amd64            
+```
+
+### Debug Distroless Images
+
+```bash       
+# Run the container
+$ docker run \
+         --pull always \
+         -p 8080:80 \
+         -it \
+         --rm \
+         --name openjdk-playground \
+         ghcr.io/sureshg/containers:openjdk-latest
+       
+# Install cdebug
+$ brew install cdebug  
+
+# Use "--image nixery.dev/busybox/curl" to use custom images.
+# Use "--platform linux/arm64" to select platform for busybox image.    
 $ cdebug exec \
-         --image nixery.dev/busybox/curl \
          --privileged \
          -it \
          --rm \
-         --platform linux/amd64 \
-         docker://openjdk-playground               
+         docker://openjdk-playground
 ```
 
 ### Misc

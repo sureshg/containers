@@ -4,3 +4,20 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    labels:
+      - "github-actions"
+      - "dependencies"
+    open-pull-requests-limit: 5
+    reviewers:
+      - sureshg
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "docker"
+      - "dependencies"
+    open-pull-requests-limit: 5
+    reviewers:
+      - sureshg

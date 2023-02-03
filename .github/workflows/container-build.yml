@@ -78,7 +78,7 @@ jobs:
           build-args: APP_USER=app
           target: openjdk
           no-cache: false
-          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:openjdk-latest

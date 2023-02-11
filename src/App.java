@@ -17,28 +17,39 @@ public class App {
     server.createContext("/", t -> {
       out.println("GET: " + t.getRequestURI());
 
-      var version = "Java %s running on %s %s"
-              .formatted(System.getProperty("java.version"),
-                      System.getProperty("os.name"),
-                      System.getProperty("os.arch"));
+      var nl = System.lineSeparator();
+      var version = "• [JVM] Java %s running on %s %s".formatted(
+              System.getProperty("java.version"),
+              System.getProperty("os.name"),
+              System.getProperty("os.arch"));
       var sb = new StringBuilder(version);
-      sb.append(System.lineSeparator()).append(System.lineSeparator());
+      sb.append(nl);
 
-      sb.append("Command Args:").append(System.lineSeparator());
-      sb.append(Arrays.toString(args)).append(System.lineSeparator());
-      sb.append(System.lineSeparator()).append(System.lineSeparator());
+      sb.append("• [Args] Command Args: ").append(Arrays.toString(args)).append(nl);
 
-      sb.append("Env Variables:").append(System.lineSeparator());
-      System.getenv().forEach((k, v) -> sb.append(k).append(" : ").append(v).append(System.lineSeparator()));
-      sb.append(System.lineSeparator()).append(System.lineSeparator());
+      long unit = 1024 * 1024L;
+      long heapSize = Runtime.getRuntime().totalMemory();
+      long heapFreeSize = Runtime.getRuntime().freeMemory();
+      long heapUsedSize = heapSize-heapFreeSize;
+      long heapMaxSize = Runtime.getRuntime().maxMemory();
 
-      sb.append("System Properties:").append(System.lineSeparator());
-      System.getProperties().forEach((k, v) -> sb.append(k).append(" : ").append(v).append(System.lineSeparator()));
+      sb.append("• [CPU] Active Processors             : ").append(Runtime.getRuntime().availableProcessors()).append(nl)
+        .append("• [Mem] Current Heap Size (Committed) : ").append(heapSize / unit).append(" MiB").append(nl)
+        .append("• [Mem] Current Free memory in Heap   : ").append(heapFreeSize / unit).append(" MiB").append(nl)
+        .append("• [Mem] Currently used memory         : ").append(heapUsedSize / unit).append(" MiB").append(nl)
+        .append("• [Mem] Max Heap Size (-Xmx)          : ").append(heapMaxSize / unit).append(" MiB").append(nl).append(nl);
 
-      final var res = sb.toString();
-      t.sendResponseHeaders(200, res.length());
+      sb.append("• [Env] Variables:").append(nl);
+      System.getenv().forEach((k, v) -> sb.append(k).append(" : ").append(v).append(nl));
+      sb.append(nl).append(nl);
+
+      sb.append("• [System] Properties:").append(nl);
+      System.getProperties().forEach((k, v) -> sb.append(k).append(" : ").append(v).append(nl));
+
+      final var res = sb.toString().getBytes();
+      t.sendResponseHeaders(200, res.length);
       try (var os = t.getResponseBody()) {
-        os.write(res.getBytes());
+        os.write(res);
       }
     });
 

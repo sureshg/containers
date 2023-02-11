@@ -140,6 +140,9 @@ $ cdebug exec \
 
 ## Resources
 
+- [Java containerization strategies](https://learn.microsoft.com/en-us/azure/developer/java/containers/)
+- [Single Core Java Containers](https://developers.redhat.com/articles/2022/04/19/best-practices-java-single-core-containers#)
+- [Docker Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#add-or-copy)
 - [Minikube](https://minikube.sigs.k8s.io/docs/start/)
 - [A collection of docker-compose files][6]
 - [Runtime privilege and Linux capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities)

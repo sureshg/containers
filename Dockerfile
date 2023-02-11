@@ -7,19 +7,21 @@
 ARG JDK_VERSION=21
 ARG GRAAL_JDK_VERSION=17
 ARG APP_USER=app
+ARG APP_VERSION="2.0.0"
 ARG APP_DIR="/app"
 ARG APP_JAR="app.jar"
 ARG SRC_DIR="/src"
+ARG RUNTIME_IMAGE="/opt/java/openjdk"
 
-# DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/jre-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jre-build .
-FROM openjdk:${JDK_VERSION}-slim AS jre-build
+# DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/jdk-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jdk-build .
+FROM openjdk:${JDK_VERSION}-slim AS jdk-build
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL maintainer="Suresh" \
       org.opencontainers.image.authors="Suresh" \
       org.opencontainers.image.title="Containers" \
       org.opencontainers.image.description="🐳 Container/K8S/Compose playground!" \
-      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.version=${APP_VERSION} \
       org.opencontainers.image.vendor="Suresh" \
       org.opencontainers.image.url="https://github.com/sureshg/containers" \
       org.opencontainers.image.source="https://github.com/sureshg/containers" \
@@ -27,6 +29,7 @@ LABEL maintainer="Suresh" \
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG JDK_VERSION
+ARG RUNTIME_IMAGE
 ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
@@ -88,7 +91,6 @@ RUN --mount=type=bind,target=.,rw \
 EOT
 
 WORKDIR ${APP_DIR}
-ENV DIST /opt/java/openjdk
 
 RUN <<EOT
  set -eux
@@ -100,7 +102,7 @@ RUN <<EOT
        --multi-release=${JDK_VERSION} \
        *.jar > ${APP_DIR}/java.modules
 
- echo "Creating custom JDK runtime image..."
+ echo "Creating custom JDK runtime image in ${RUNTIME_IMAGE}..."
  INCUBATOR_MODULES=$(java --list-modules | grep -i incubator | sed 's/@.*//' | paste -sd "," - )
  # JAVA_TOOL_OPTIONS="-Djdk.lang.Process.launchMechanism=vfork"
  $JAVA_HOME/bin/jlink \
@@ -113,20 +115,20 @@ RUN <<EOT
           --no-man-pages \
           --no-header-files \
           --save-opts "${APP_DIR}/jlink.opts" \
-          --output $DIST
+          --output ${RUNTIME_IMAGE}
 
   # Create default CDS archive for jlinked runtime and verify it
   # https://malloc.se/blog/zgc-jdk15#class-data-sharing
-  $DIST/bin/java -XX:+UseZGC -Xshare:dump
+  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -Xshare:dump
 
   # Check if it worked, this will fail if it can't map the archive (lib/server/[classes.jsa,classes_nocoops.jsa])
-  $DIST/bin/java -XX:+UseZGC -Xshare:on --version
+  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -Xshare:on --version
 
   # List all modules included in the custom java runtime
-  $DIST/bin/java --list-modules
+  ${RUNTIME_IMAGE}/bin/java --list-modules
 
   echo "Creating dynamic CDS archive by running the app..."
-  nohup $DIST/bin/java \
+  nohup ${RUNTIME_IMAGE}/bin/java \
         --show-version \
         --enable-preview \
         -XX:+UseZGC \
@@ -134,13 +136,13 @@ RUN <<EOT
         -XX:SharedArchiveFile=${APP_DIR}/app.jsa \
         -jar ${APP_JAR} & \
   sleep 1 && \
-  curl -fsSL http://localhost/test && \
+  curl -fsSL http://localhost/test
   curl -fsSL http://localhost/shutdown || echo "App CDS archive generation completed!"
   # Give some time to generate the CDS archive
   sleep 1
 
   du -kcsh * | sort -rh
-  du -kcsh $DIST
+  du -kcsh ${RUNTIME_IMAGE}
 EOT
 
 # Create inline file
@@ -151,18 +153,21 @@ EOT
 
 ##### App Image #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest --no-cache  --pull --target openjdk .
-# DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/env/pgadmin.env" --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/compose/env/pgadmin.env" --target openjdk .
 # docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
 FROM  gcr.io/distroless/java-base-debian11:nonroot as openjdk
-# FROM --platform=$BUILDPLATFORM gcr.io/distroless/java-base:latest AS openjdk
+# FROM --platform=$BUILDPLATFORM ... as openjdk
 # FROM debian:stable-slim AS openjdk
 
 ARG APP_DIR
+ARG APP_JAR
+ARG APP_VERSION
+ARG RUNTIME_IMAGE
 
 # Declaration and usage of same ENV var should be in two ENV instructions.
-ENV JAVA_HOME=/opt/java/openjdk
+ENV JAVA_HOME=${RUNTIME_IMAGE}
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
-ENV APP_DIR_ENV=${APP_DIR}
+ENV APP_VERSION=${APP_VERSION}
 #   LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8' \
 #   TZ "PST8PDT"
 
@@ -173,13 +178,14 @@ WORKDIR ${APP_DIR}
 # EOT
 # USER ${APP_USER}
 
+# COPY is same as 'ADD' but without the tar and remote url handling.
 # These copy will run concurrently on BUILDKIT.
-COPY --link --from=jre-build --chmod=755 $JAVA_HOME $JAVA_HOME
-COPY --link --from=jre-build --chmod=755 ${APP_DIR} ${APP_DIR}
+COPY --link --from=jdk-build --chmod=755 $JAVA_HOME $JAVA_HOME
+COPY --link --from=jdk-build --chmod=755 ${APP_DIR} ${APP_DIR}
 # COPY --link --from=openjdk:${JDK_VERSION}-slim $JAVA_HOME $JAVA_HOME
 
 # USER nobody:nobody
-# COPY --link --from=jre-build --chown=nobody:nobody $JAVA_HOME $JAVA_HOME
+# COPY --link --from=jdk-build --chown=nobody:nobody $JAVA_HOME $JAVA_HOME
 
 # Shell vs Exec - https://docs.docker.com/engine/reference/builder/#run
 # ENTRYPOINT ["java"]
@@ -198,7 +204,7 @@ CMD ["java", \
      "-XX:MaxRAMPercentage=0.8", \
      "-Djava.security.egd=file:/dev/./urandom", \
      "-jar", "app.jar", \
-     "arg1", "${APP_DIR_ENV}" ]
+     "arg1"]
 
 EXPOSE 80/tcp
 
@@ -264,12 +270,14 @@ WORKDIR /app
 COPY src /app
 
 RUN <<EOT
+set -eux
 # export TOOLCHAIN_DIR="${PWD}/x86_64-linux-musl-native"
 # export CC="${TOOLCHAIN_DIR}/bin/gcc"
 # export PATH="${TOOLCHAIN_DIR}/bin:${PATH}"
 # native-image --static --libc=musl -m jdk.httpserver -o jwebserver.static
 # upx --lzma --best jwebserver.static -o jwebserver.static.upx
 javac --enable-preview \
+      -encoding UTF-8 \
       --release ${GRAAL_JDK_VERSION} \
       App.java
 
@@ -283,6 +291,7 @@ native-image \
     --native-image-info \
     -H:+ReportExceptionStackTraces \
     -Djava.awt.headless=false \
+    -J-Dfile.encoding=UTF-8 \
     -J--add-modules -JALL-SYSTEM \
     -o httpserver App
 EOT
@@ -292,12 +301,12 @@ EOT
 # docker run -it --rm -p 8080:80 sureshg/graalvm-static
 # dive sureshg/graalvm-static
 FROM scratch as graalvm-static
-# FROM gcr.io/distroless/(static|base) as graalvm-static
+# FROM gcr.io/distroless/(static-debian11|base-debian11) as graalvm-static
 # FROM cgr.dev/chainguard/graalvm-native-image-base:latest as graalvm-static
 # RUN ldconfig -p
 
 COPY --from=graalvm /app/httpserver /
-CMD ["./httpserver"]
+ENTRYPOINT ["./httpserver"]
 EXPOSE 80/tcp
 
 
@@ -318,7 +327,7 @@ CMD ["jshell", "--show-version", "--enable-preview", "--startup", "JAVASE", "--f
 ##### Slimmer JDK using JLink #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/jdk-slim --no-cache --target jdk-slim .
 # docker run -it --rm sureshg/jdk-slim
-FROM jre-build as jdk-slim
+FROM jdk-build as jdk-slim
 
 ENV JDK_SLIM /opt/java/jdk-slim
 

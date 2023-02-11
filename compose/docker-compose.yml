@@ -3,21 +3,24 @@ version: "3.8"
 # docker compose -f docker-compose.yml up
 services:
   svc1:
-    container_name: svc1
+    container_name: ${SERVICE1_NAME}
     build:
-      context: .
+      context: ..
       target: openjdk
     restart: always
     working_dir: /app
     volumes:
       - ./:/src:rw
       - app-data:/data
-    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE:-svc1}" ]
+    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE1_NAME:-svc}" ]
+    environment:
+      - SERVICE_NAME=${SERVICE1_NAME}
     ports:
       - "8080:80"
     networks:
       - app-network
-    # platform: linux/amd64
+    platform: linux/amd64
+
     # privileged: true
     # cap_add:
     #   - NET_ADMIN
@@ -29,23 +32,25 @@ services:
   #   - /var/run
 
   svc2:
-    container_name: svc2
+    container_name: ${SERVICE2_NAME}
     build:
-      context: .
+      context: ..
       target: openjdk
     restart: always
     working_dir: /app
     volumes:
       - ./:/src:rw
       - app-data:/data
-    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE:-svc2}" ]
+    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE2_NAME:-svc}" ]
+    environment:
+      - SERVICE_NAME=${SERVICE2_NAME}
     ports:
       - "8081:80"
     networks:
       - app-network
+    platform: linux/arm64
     depends_on:
       - db
-    # platform: linux/arm64
 
   db:
     container_name: postgres

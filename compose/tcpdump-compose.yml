@@ -4,7 +4,7 @@ version: "3.8"
 services:
   app:
     build:
-      context: .
+      context: ..
       target: openjdk
     container_name: app
     restart: always

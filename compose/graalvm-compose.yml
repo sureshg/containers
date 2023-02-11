@@ -1,20 +1,20 @@
 version: "3.8"
 
 # docker compose -f graalvm-compose.yml up
-# docker compose -f graalvm-compose.yml up --build native-image-amd64
-# docker compose -f graalvm-compose.yml up --build native-image-arm64
+# docker compose -f graalvm-compose.yml up --remove-orphans --build native-image-arm64
+# docker compose -f graalvm-compose.yml up --remove-orphans --build native-image-amd64
 services:
   native-image-amd64:
     container_name: app-linux-amd64
     build:
-      context: .
+      context: ..
       target: graalvm-static
       args:
-        JDK_VERSION: 19
+        GRAAL_JDK_VERSION: 17
     platform: linux/amd64
     volumes:
       - ./:/src:rw
-    command: [ "./httpserver" ]
+    command: [ "amd64" ]
     ports:
       - "8081:80"
     networks:
@@ -23,14 +23,14 @@ services:
   native-image-arm64:
     container_name: app-linux-arm64
     build:
-      context: .
+      context: ..
       target: graalvm-static
       args:
-        JDK_VERSION: 19
+        GRAAL_JDK_VERSION: 17
     platform: linux/arm64
     volumes:
       - ./:/src:rw
-    command: [ "./httpserver" ]
+    command: [ "arm64" ]
     ports:
       - "8082:80"
     networks:

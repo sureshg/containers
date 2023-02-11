@@ -1,6 +1,7 @@
 version: "3.8"
 
-# docker compose -f docker-compose.yml up
+# https://docs.docker.com/engine/reference/commandline/compose_up/#options
+# docker compose -f docker-compose.yml up --build --pull=always
 services:
   svc1:
     container_name: ${SERVICE1_NAME}
@@ -95,23 +96,23 @@ services:
     depends_on:
       - db
 
-  cadvisor:
-    container_name: cadvisor
-    image: gcr.io/cadvisor/cadvisor
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    ports:
-      - "9000:8080"
-    networks:
-      - app-network
-    # Disabling until it fixes on M1
-    # restart: always
+#  cadvisor:
+#    container_name: cadvisor
+#    image: gcr.io/cadvisor/cadvisor
+#    volumes:
+#      - /:/rootfs:ro
+#      - /var/run:/var/run:ro
+#      - /sys:/sys:ro
+#      - /dev/disk/:/dev/disk:ro
+#    privileged: true
+#    devices:
+#      - /dev/kmsg
+#    ports:
+#      - "9000:8080"
+#    networks:
+#      - app-network
+#    # Disabling until it fixes on M1
+#    # restart: always
 
 volumes:
   pg-data:

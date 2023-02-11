@@ -18,10 +18,7 @@ public class App {
       out.println("GET: " + t.getRequestURI());
 
       var nl = System.lineSeparator();
-      var version = "• [JVM] Java %s running on %s %s".formatted(
-              System.getProperty("java.version"),
-              System.getProperty("os.name"),
-              System.getProperty("os.arch"));
+      var version = "• [JVM] Java %s running on %s %s".formatted(System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
       var sb = new StringBuilder(version);
       sb.append(nl);
 

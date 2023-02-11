@@ -136,7 +136,7 @@ RUN <<EOT
         -XX:SharedArchiveFile=${APP_DIR}/app.jsa \
         -jar ${APP_JAR} & \
   sleep 1 && \
-  curl -fsSL http://localhost/test
+  curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors http://localhost/test
   curl -fsSL http://localhost/shutdown || echo "App CDS archive generation completed!"
   # Give some time to generate the CDS archive
   sleep 1

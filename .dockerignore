@@ -1,7 +1,9 @@
 Dockerfile*
 
-# Compiled class file
-*.class
+# IntelliJ Idea
+.idea/
+*.iml
+out/
 
 # Log file
 *.log
@@ -15,11 +17,14 @@ Dockerfile*
 *.tar.gz
 *.rar
 
+# Compiled class file
+*.class
+
 # virtual machine crash logs
 hs_err_pid*
 
-.idea/
-.git
-out/
+.github/
+**/.git
+**/.DS_Store
 **/docs/*
-
+README.md

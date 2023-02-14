@@ -2,7 +2,6 @@ version: "3.8"
 
 # docker compose -f clickhouse-compose.yml up
 services:
-
   clickhouse-server:
     image: clickhouse/clickhouse-server:latest-alpine
     restart: always

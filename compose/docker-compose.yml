@@ -2,54 +2,57 @@ version: "3.8"
 
 # https://docs.docker.com/engine/reference/commandline/compose_up/#options
 # docker compose -f docker-compose.yml up --build --pull=always
+name: openjdk
+
 services:
-  svc1:
-    container_name: ${SERVICE1_NAME}
+  app-amd64:
+    container_name: ${APP_NAME_AMD64}
     build:
       context: ..
       target: openjdk
+    platform: linux/amd64
     restart: always
     working_dir: /app
     volumes:
       - ./:/src:rw
       - app-data:/data
-    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE1_NAME:-svc}" ]
+    command: [ "java", "--show-version", "-jar", "app.jar", "${APP_NAME_AMD64:-amd64}" ]
     environment:
-      - SERVICE_NAME=${SERVICE1_NAME}
+      - PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - CONTAINER_NAME=${APP_NAME_AMD64}
     ports:
       - "8080:80"
     networks:
       - app-network
-    platform: linux/amd64
-
+    depends_on:
+      - db
     # privileged: true
     # cap_add:
     #   - NET_ADMIN
     #   - SYS_ADMIN
-    depends_on:
-      - db
-  # tmpfs:
-  #   - /run
-  #   - /var/run
+    # tmpfs:
+    #   - /run
+    #   - /var/run
 
-  svc2:
-    container_name: ${SERVICE2_NAME}
+  app-arm64:
+    container_name: ${APP_NAME_ARM64}
     build:
       context: ..
       target: openjdk
+    platform: linux/arm64
     restart: always
     working_dir: /app
     volumes:
       - ./:/src:rw
       - app-data:/data
-    command: [ "java", "--show-version", "-jar", "app.jar", "${SERVICE2_NAME:-svc}" ]
+    command: [ "java", "--show-version", "-jar", "app.jar", "${APP_NAME_ARM64:-arm64}" ]
     environment:
-      - SERVICE_NAME=${SERVICE2_NAME}
+      - PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - CONTAINER_NAME=${APP_NAME_ARM64}
     ports:
       - "8081:80"
     networks:
       - app-network
-    platform: linux/arm64
     depends_on:
       - db
 
@@ -76,7 +79,7 @@ services:
     networks:
       - app-network
     ports:
-      - "8089:8089"
+      - "8082:8089"
     depends_on:
       - db
 
@@ -89,7 +92,7 @@ services:
       - pgadmin-data:/data/pgadmin
       - app-data:/data/app
     ports:
-      - "8000:8000"
+      - "8083:8000"
     networks:
       - app-network
     command: [ "jwebserver", "-b", "0.0.0.0", "-d", "/data" ]

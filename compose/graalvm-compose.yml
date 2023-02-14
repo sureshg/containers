@@ -1,38 +1,48 @@
 version: "3.8"
 
 # docker compose -f graalvm-compose.yml up
-# docker compose -f graalvm-compose.yml up --remove-orphans --build native-image-arm64
-# docker compose -f graalvm-compose.yml up --remove-orphans --build native-image-amd64
+
+# Some time build with --no-cache required for forcefully rebuild the image
+# docker compose -f graalvm-compose.yml build --no-cache app-arm64
+
+# docker compose -f graalvm-compose.yml up --remove-orphans --build app-arm64
+# docker compose -f graalvm-compose.yml up --remove-orphans --build app-amd64
+name: native-image
+
 services:
-  native-image-amd64:
-    container_name: app-linux-amd64
+  app-amd64:
+    container_name: ${NI_NAME_AMD64}
     build:
       context: ..
       target: graalvm-static
-      args:
-        GRAAL_JDK_VERSION: 17
+      # args:
+      #  GRAAL_JDK_VERSION: 17
     platform: linux/amd64
+    command: [ "${NI_NAME_AMD64:-amd64}" ]
+    environment:
+      - PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - CONTAINER_NAME=${NI_NAME_AMD64}
     volumes:
       - ./:/src:rw
-    command: [ "amd64" ]
     ports:
-      - "8081:80"
+      - "9000:80"
     networks:
       - app-network
 
-  native-image-arm64:
-    container_name: app-linux-arm64
+  app-arm64:
+    container_name: ${NI_NAME_ARM64}
     build:
       context: ..
       target: graalvm-static
-      args:
-        GRAAL_JDK_VERSION: 17
     platform: linux/arm64
+    command: [ "${NI_NAME_ARM64:-arm64}" ]
+    environment:
+      - PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - CONTAINER_NAME=${NI_NAME_ARM64}
     volumes:
       - ./:/src:rw
-    command: [ "arm64" ]
     ports:
-      - "8082:80"
+      - "9001:80"
     networks:
       - app-network
 

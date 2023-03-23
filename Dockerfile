@@ -313,7 +313,7 @@ EXPOSE 80/tcp
 ##### Jshell image #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/jshell --no-cache --target jshell .
 # docker run -it --rm -e TZ="UTC" sureshg/jshell
-FROM azul/zulu-openjdk-alpine:19 as jshell
+FROM azul/zulu-openjdk-alpine:20 as jshell
 
 ENV TZ "PST8PDT"
 RUN cat <<EOT > app.jsh

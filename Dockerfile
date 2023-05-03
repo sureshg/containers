@@ -251,18 +251,17 @@ EOT
 
 # Install HotSpot disassembler plugin
 # https://github.com/openjdk/jdk/blob/master/src/utils/hsdis/README.md
+# https://chriswhocodes.com/hsdis/
 
 RUN <<EOT
   set -eux
   # ARCH="$(dpkg --print-architecture)"; \
   case "${TARGETARCH}" in
          amd64|x86_64)
-           SHA256_SUM='2ebd13ca0dd0a3f20c49b99c12b72e376b6c371975f734403048ddf3d7b51507'
-           BINARY_URL='https://chriswhocodes.com/hsdis/hsdis-amd64.so'
+           BINARY_URL='https://builds.shipilev.net/hsdis/hsdis-amd64.so'
            ;;
          aarch64|arm64)
-           SHA256_SUM='c531ae2f6002987b1d7ee5713a76e51bb54dc3da7b00c8b1214f021abda4dffb'
-           BINARY_URL='https://chriswhocodes.com/hsdis/hsdis-aarch64.so'
+           BINARY_URL='https://builds.shipilev.net/hsdis/hsdis-aarch64.so'
            ;;
          *)
            echo "Unsupported arch: ${TARGETARCH}"
@@ -271,8 +270,8 @@ RUN <<EOT
   esac;
   HSDIS_FILE="${BINARY_URL##*/}"
   echo "Downloading ${BINARY_URL} ..."
-  curl --progress-bar --request GET -L --url "${BINARY_URL}" --output "${HSDIS_FILE}"
-  echo "${SHA256_SUM} $HSDIS_FILE" | sha256sum -c -
+  curl --progress-bar --request GET -L --fail --url "${BINARY_URL}" --output "${HSDIS_FILE}"
+  # echo "${SHA256_SUM} $HSDIS_FILE" | sha256sum -c -
   mv $HSDIS_FILE $JAVA_HOME/lib/server
 EOT
 

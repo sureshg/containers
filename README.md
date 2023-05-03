@@ -192,8 +192,8 @@ $ docker run -d -p 5000:5000 --restart=always --name registry registry:2
 
 [lint_img]: https://img.shields.io/badge/Dockerfile%20Linter-%E2%9D%A4-2596ec.svg?logo=Docker&style=for-the-badge&logoColor=2596ec
 
-[openjdk_app_img]: https://ghcr-badge.deta.dev/sureshg/containers/size?tag=openjdk-latest&label=OpenJDK%20App
+[openjdk_app_img]: https://ghcr-badge.egpl.dev/sureshg/containers/size?tag=openjdk-latest&label=OpenJDK%20App&color=mediumslateblue
 
-[nativeimage_app_img]: https://ghcr-badge.deta.dev/sureshg/containers/size?tag=nativeimage-latest&label=NativeImage%20App
+[nativeimage_app_img]: https://ghcr-badge.egpl.dev/sureshg/containers/size?tag=nativeimage-latest&label=NativeImage%20App&color=mediumvioletred
 
 [container-images]: https://github.com/sureshg/containers/pkgs/container/containers

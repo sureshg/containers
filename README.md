@@ -26,10 +26,10 @@ $ DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-hsdis:latest --target openjd
 $ docker run \
         -it \
         --rm \
-        --mount type=bind,source=$(pwd),destination=/app,readonly \
-        -e TYPE=HSDIS \
+        --env APP_NAME=HSDIS \
         --workdir /app \
         --publish 8080:80 \
+        --mount type=bind,source=$(pwd),destination=/app,readonly \
         sureshg/openjdk-hsdis:latest src/App.java                       
 ```
 

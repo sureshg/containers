@@ -2,6 +2,8 @@ version: "3.8"
 
 # https://docs.docker.com/engine/reference/commandline/compose_up/#options
 # docker compose -f docker-compose.yml up --build --pull=always
+# docker compose alpha watch
+# docker compose -f docker-compose.yml down
 name: openjdk
 
 services:
@@ -55,6 +57,13 @@ services:
       - app-network
     depends_on:
       - db
+    x-develop:
+      watch:
+        - path: ../src/App.java
+          action: rebuild
+        - path: ./compose/env
+          action: sync
+          target: /app/
 
   db:
     container_name: postgres

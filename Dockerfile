@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.4
 
 # Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups (https://twitter.com/jpetazzo/status/1047179436959956992)
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
@@ -28,12 +28,22 @@ LABEL maintainer="Suresh" \
       org.opencontainers.image.licenses="Apache-2.0"
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# Platform of the build result. Eg linux/amd64, linux/arm/v7
+# ARG TARGETPLATFORM=linux/aarch64
+ARG TARGETPLATFORM
+# OS component of TARGETPLATFORM
+ARG TARGETOS
+# Architecture component of TARGETPLATFORM
+ARG TARGETARCH
+# Platform of the node performing the build.
+ARG BUILDPLATFORM
+# OS component of BUILDPLATFORM
+ARG BUILDOS
+# Architecture component of BUILDPLATFORM
+ARG BUILDARCH
+# Application specific build args
 ARG JDK_VERSION
 ARG RUNTIME_IMAGE
-ARG TARGETARCH
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-# ARG TARGETPLATFORM=linux/aarch64
 ARG APP_DIR
 ARG APP_JAR
 ARG SRC_DIR
@@ -66,8 +76,14 @@ RUN <<EOT
     mkdir -p ${APP_DIR}
 EOT
 
-# Instead of copying, mount the application and build the jar
+# Run a command from another image instead of installing.
+RUN --mount=from=busybox:latest,src=/bin/,dst=/bin \
+    ls -ltrh /bin \
+    && wget --help
+
+# Leverage a bind mount to the current directory to avoid having to copy the source code into the container and build the jar.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md#run---mount
+# --mount=type=bind,source=App.java,target=App.java,readonly
 WORKDIR ${SRC_DIR}
 RUN --mount=type=bind,target=.,rw \
     --mount=type=secret,id=db,target=/secrets/db \
@@ -163,8 +179,10 @@ ARG APP_DIR
 ARG APP_JAR
 ARG APP_VERSION
 ARG RUNTIME_IMAGE
+ARG SOURCE_DATE_EPOCH=0
 
 # Declaration and usage of same ENV var should be in two ENV instructions.
+ENV SOURCE_DATE_EPOCH ${SOURCE_DATE_EPOCH}
 ENV JAVA_HOME=${RUNTIME_IMAGE}
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 ENV APP_VERSION=${APP_VERSION}
@@ -277,8 +295,8 @@ set -eux
 # native-image --static --libc=musl -m jdk.httpserver -o jwebserver.static
 # upx --lzma --best jwebserver.static -o jwebserver.static.upx
 javac --enable-preview \
-      -encoding UTF-8 \
       --release ${GRAAL_JDK_VERSION} \
+      -encoding UTF-8 \
       App.java
 
 native-image \
@@ -302,7 +320,7 @@ EOT
 # dive sureshg/graalvm-static
 FROM scratch as graalvm-static
 # FROM gcr.io/distroless/(static-debian11|base-debian11) as graalvm-static
-# FROM cgr.dev/chainguard/graalvm-native-image-base:latest as graalvm-static
+# FROM cgr.dev/chainguard/graalvm-native:latest as graalvm-static
 # RUN ldconfig -p
 
 COPY --from=graalvm /app/httpserver /

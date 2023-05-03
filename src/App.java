@@ -34,7 +34,8 @@ public class App {
         .append("• [Mem] Current Heap Size (Committed) : ").append(heapSize / unit).append(" MiB").append(nl)
         .append("• [Mem] Current Free memory in Heap   : ").append(heapFreeSize / unit).append(" MiB").append(nl)
         .append("• [Mem] Currently used memory         : ").append(heapUsedSize / unit).append(" MiB").append(nl)
-        .append("• [Mem] Max Heap Size (-Xmx)          : ").append(heapMaxSize / unit).append(" MiB").append(nl).append(nl);
+        .append("• [Mem] Max Heap Size (-Xmx)          : ").append(heapMaxSize / unit).append(" MiB").append(nl)
+        .append("• [Thread] Virtual                    : ").append(Thread.currentThread()).append(nl).append(nl);
 
       sb.append("• [Env] Variables:").append(nl);
       System.getenv().forEach((k, v) -> sb.append(k).append(" : ").append(v).append(nl));

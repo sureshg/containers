@@ -36,6 +36,9 @@ $ docker run \
 The following commands are used to build multi-platform images locally using `Docker Buildx` on [Rancher Desktop][3].
 
 ```bash
+# Initialize the docker file
+$ docker init
+
 # Create a new buildx builder instance
 $ docker buildx create --name=buildkit-container --driver=docker-container
 # docker buildx use buildkit-container
@@ -46,6 +49,7 @@ $ docker buildx create --name=buildkit-container --driver=docker-container
 $ docker buildx \
          --builder buildkit-container \
          build \
+         --sbom=true \
          --platform=linux/amd64,linux/arm64 \
          --pull \
          --no-cache  \
@@ -110,43 +114,54 @@ $ cdebug exec \
 
 ### Misc
 
+- IntelliJ Support for Rancher Desktop
+
+  ```bash
+  # Create a symlink to docker installed by Rancher Desktop
+  $ sudo ln -s $(which docker) /usr/local/bin/docker
+  ```
 - Install [Rancher Desktop][3] with [containerd][0] [multi-platform][1] support
 
   ```bash
   # Install Rancher Desktop and Select containerd as runtime.
   $ sudo docker run --privileged --rm tonistiigi/binfmt --install all
   $ rdctl shell
+     # To list all architectures
      $ ls -1 /proc/sys/fs/binfmt_misc/qemu*
-       /proc/sys/fs/binfmt_misc/qemu-aarch64
-       /proc/sys/fs/binfmt_misc/qemu-arm
-       /proc/sys/fs/binfmt_misc/qemu-mips64
-       /proc/sys/fs/binfmt_misc/qemu-mips64el
-       /proc/sys/fs/binfmt_misc/qemu-ppc64le
-       /proc/sys/fs/binfmt_misc/qemu-riscv64
-       /proc/sys/fs/binfmt_misc/qemu-s390x
-
+  
   $ docker run --rm --platform=linux/arm64 alpine uname -a
   $ docker run --rm --platform=linux/s390x alpine uname -a
-  
   
   # Check for all the OS archs
   $ for i in `docker images --format {{.ID}}`; do echo $i `docker image inspect $i | grep -e Architecture -e Os`; done
   
   # Remove unused data
   $ docker system prune -f
-  # OR 
-  # docker system df && docker image prune -f && docker container prune -f && docker network prune -f && docker volume prune -f
   ```
+
+- Run a private container registry
+
+```bash
+$ docker run -d -p 5000:5000 --restart=always --name registry registry:2
+```
 
 ## Resources
 
 - [Java containerization strategies](https://learn.microsoft.com/en-us/azure/developer/java/containers/)
 - [Single Core Java Containers](https://developers.redhat.com/articles/2022/04/19/best-practices-java-single-core-containers#)
 - [Docker Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#add-or-copy)
-- [Minikube](https://minikube.sigs.k8s.io/docs/start/)
 - [A collection of docker-compose files][6]
 - [Runtime privilege and Linux capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities)
 - [Runtime options with Memory, CPUs, and GPUs](https://docs.docker.com/config/containers/resource_constraints/)
+
+## Local Dev Tools
+
+- [Rancher Desktop][3]
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Podman Desktop](https://podman-desktop.io/)
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/)
+- [Lima-Linux VM on Mac](https://github.com/lima-vm/lima)
+- [Macpine](https://github.com/beringresearch/macpine)
 
 [0]: https://github.com/containerd/containerd
 

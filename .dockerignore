@@ -1,4 +1,29 @@
-Dockerfile*
+# Include any files or directories that you don't want to be copied to your
+# container here (e.g., local build artifacts, temporary files, etc.).
+#
+# For more help, visit the .dockerignore file reference guide at
+# https://docs.docker.com/engine/reference/builder/#dockerignore-file
+
+**/.DS_Store
+**/.classpath
+**/.dockerignore
+**/.env
+**/.git
+**/.github/
+**/.gitignore
+**/.project
+**/.settings
+**/.vscode
+**/bin
+**/charts
+**/docker-compose*
+**/compose*
+**/Dockerfile*
+**/*.class
+**/docs/*
+LICENSE
+README.md
+
 
 # IntelliJ Idea
 .idea/
@@ -17,14 +42,5 @@ out/
 *.tar.gz
 *.rar
 
-# Compiled class file
-*.class
-
 # virtual machine crash logs
 hs_err_pid*
-
-.github/
-**/.git
-**/.DS_Store
-**/docs/*
-README.md

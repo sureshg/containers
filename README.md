@@ -33,14 +33,43 @@ $ docker run \
         sureshg/openjdk-hsdis:latest src/App.java                       
 ```
 
+### Run images from [GHCR][container-images]
+
+```Bash
+# Run AMD64 image of the application
+$ docker run \
+         --platform=linux/amd64 \
+         --pull always \
+         -p 8080:80 \
+         -it \
+         --rm \
+         --name openjdk-playground \
+         ghcr.io/sureshg/containers:openjdk-latest
+
+# Run the current platform architecture image of the application
+$ docker run \
+         --pull always \
+         -p 8080:80 \
+         -it \
+         --rm \
+         --name openjdk-playground \
+         ghcr.io/sureshg/containers:openjdk-latest
+
+# Run the native image application
+$ docker run \
+         --platform=linux/amd64 \
+         --pull always \
+         -p 8080:80 \
+         -it --rm \
+         --name openjdk-playground \
+         ghcr.io/sureshg/containers:nativeimage-latest
+```
+
 ### Multi-Platform Builds
 
 The following commands are used to build multi-platform images locally using `Docker Buildx` on [Rancher Desktop][3].
 
 ```bash
-# Initialize the docker file
-$ docker init
-
 # Create a new buildx builder instance
 $ docker buildx create --name=buildkit-container --driver=docker-container
 # docker buildx use buildkit-container
@@ -116,6 +145,13 @@ $ cdebug exec \
 
 ### Misc
 
+- Docker Init
+
+  ```bash
+  # Initialize the docker file
+  $ docker init
+  ```
+
 - IntelliJ Support for Rancher Desktop
 
   ```bash
@@ -143,13 +179,14 @@ $ cdebug exec \
 
 - Run a private container registry
 
-```bash
-$ docker run -d -p 5000:5000 --restart=always --name registry registry:2
-```
+  ```bash
+  $ docker run -d -p 5000:5000 --restart=always --name registry registry:2
+  ```
 
 ## Resources
 
 - [Java containerization strategies](https://learn.microsoft.com/en-us/azure/developer/java/containers/)
+- [OpenJDK Container Awareness](https://developers.redhat.com/articles/2022/04/19/java-17-whats-new-openjdks-container-awareness)
 - [Single Core Java Containers](https://developers.redhat.com/articles/2022/04/19/best-practices-java-single-core-containers#)
 - [Docker Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#add-or-copy)
 - [A collection of docker-compose files][6]

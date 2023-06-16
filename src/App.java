@@ -55,6 +55,8 @@ public class App {
       server.stop(0);
       exit(0);
     });
+
+    // server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
 

@@ -4,10 +4,10 @@
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 # Global build args
-ARG JDK_VERSION=21
+ARG JDK_VERSION=22
 ARG GRAAL_JDK_VERSION=17
 ARG APP_USER=app
-ARG APP_VERSION="2.0.0"
+ARG APP_VERSION="3.0.0"
 ARG APP_DIR="/app"
 ARG APP_JAR="app.jar"
 ARG SRC_DIR="/src"
@@ -135,10 +135,10 @@ RUN <<EOT
 
   # Create default CDS archive for jlinked runtime and verify it
   # https://malloc.se/blog/zgc-jdk15#class-data-sharing
-  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -Xshare:dump
+  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:dump
 
   # Check if it worked, this will fail if it can't map the archive (lib/server/[classes.jsa,classes_nocoops.jsa])
-  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -Xshare:on --version
+  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:on --version
 
   # List all modules included in the custom java runtime
   ${RUNTIME_IMAGE}/bin/java --list-modules
@@ -147,7 +147,7 @@ RUN <<EOT
   nohup ${RUNTIME_IMAGE}/bin/java \
         --show-version \
         --enable-preview \
-        -XX:+UseZGC \
+        -XX:+UseZGC -XX:+ZGenerational \
         -XX:+AutoCreateSharedArchive \
         -XX:SharedArchiveFile=${APP_DIR}/app.jsa \
         -jar ${APP_JAR} & \
@@ -216,6 +216,7 @@ CMD ["java", \
      "--enable-native-access=ALL-UNNAMED", \
      # "-Xlog:cds", \
      "-XX:+UseZGC", \
+     "-XX:+ZGenerational", \
      "-XX:+PrintCommandLineFlags", \
      "-XX:+AutoCreateSharedArchive", \
      "-XX:SharedArchiveFile=app.jsa", \
@@ -279,7 +280,7 @@ ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
 
 
 ##### GraalVM NativeImage Build #####
-FROM ghcr.io/graalvm/native-image:latest as graalvm
+FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm-ce
 
 ARG GRAAL_JDK_VERSION
 
@@ -298,13 +299,14 @@ javac --enable-preview \
       -encoding UTF-8 \
       App.java
 
+gu install native-image
 native-image \
     --static \
     --no-fallback \
     --enable-preview \
     --enable-https \
-    --link-at-build-time \
     --install-exit-handlers \
+    -R:MaxHeapSize=32m \
     --native-image-info \
     -H:+ReportExceptionStackTraces \
     -Djava.awt.headless=false \
@@ -322,7 +324,7 @@ FROM scratch as graalvm-static
 # FROM cgr.dev/chainguard/graalvm-native:latest as graalvm-static
 # RUN ldconfig -p
 
-COPY --from=graalvm /app/httpserver /
+COPY --from=graalvm-ce /app/httpserver /
 ENTRYPOINT ["./httpserver"]
 EXPOSE 80/tcp
 
@@ -330,7 +332,7 @@ EXPOSE 80/tcp
 ##### Jshell image #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/jshell --no-cache --target jshell .
 # docker run -it --rm -e TZ="UTC" sureshg/jshell
-FROM azul/zulu-openjdk-alpine:20 as jshell
+FROM openjdk:${JDK_VERSION}-slim as jshell
 
 ENV TZ "PST8PDT"
 RUN cat <<EOT > app.jsh

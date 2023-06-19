@@ -91,6 +91,7 @@ jobs:
         with:
           build-args: APP_USER=app
           target: graalvm-static
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           # push: ${{ startsWith(github.ref, 'refs/tags/') }}
           tags: |

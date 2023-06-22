@@ -306,8 +306,8 @@ native-image \
     --enable-preview \
     --enable-https \
     --install-exit-handlers \
+    -Ob \
     -R:MaxHeapSize=32m \
-    --native-image-info \
     -H:+ReportExceptionStackTraces \
     -Djava.awt.headless=false \
     -J-Dfile.encoding=UTF-8 \

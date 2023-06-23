@@ -377,6 +377,7 @@ native-image \
     --install-exit-handlers \
     -Ob \
     -R:MaxHeapSize=32m \
+    -march=compatibility \
     -H:+ReportExceptionStackTraces \
     -Djava.awt.headless=false \
     -J--add-modules -JALL-SYSTEM \

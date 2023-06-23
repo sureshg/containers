@@ -5,7 +5,7 @@
 
 # Global build args
 ARG JDK_VERSION=22
-ARG GRAAL_JDK_VERSION=17
+ARG GRAAL_JDK_VERSION=20
 ARG APP_USER=app
 ARG APP_VERSION="3.0.0"
 ARG APP_DIR="/app"
@@ -278,9 +278,79 @@ EOT
 
 ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
 
+##### GraalVM community dev build #####
+FROM debian:unstable-slim as graalvm-community-dev
+
+ARG GRAAL_JDK_VERSION
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+RUN <<EOT
+  set -eux
+  echo "Installing GraalVM Community Dev (JDK ${GRAAL_JDK_VERSION}) for ${TARGETPLATFORM}..."
+  DEBIAN_FRONTEND=noninteractive
+  apt -y update
+  apt -y upgrade
+  apt -y install \
+         --no-install-recommends \
+         binutils curl \
+         tzdata locales fontconfig ca-certificates \
+         gcc zlib1g-dev
+  rm -rf /var/lib/apt/lists/* /tmp/*
+  apt -y clean
+EOT
+
+ENV JAVA_HOME /opt/java/openjdk
+ENV PATH $JAVA_HOME/bin:$PATH
+# Default to UTF-8 file.encoding
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+
+RUN <<EOT
+  set -eux
+  case "${TARGETARCH}" in
+    amd64|x86_64)
+      ARCH='amd64'
+      ;;
+    aarch64|arm64)
+      ARCH='aarch64'
+      ;;
+    *)
+      echo "Unsupported arch: ${TARGETARCH}"
+      exit 1
+      ;;
+  esac;
+
+  # Download the GraalVM Dev
+  GRAALVM_BASE_URL="https://github.com/graalvm/graalvm-ce-dev-builds/releases"
+  GRAALVM_RELEASE=$(curl -Ls -o /dev/null -w %{url_effective} "${GRAALVM_BASE_URL}/latest")
+  GRAALVM_TAG="${GRAALVM_RELEASE##*/}"
+  GRAALVM_PKG="graalvm-community-java${GRAAL_JDK_VERSION}-${TARGETOS}-${ARCH}-dev.tar.gz"
+  DOWNLOAD_URL="${GRAALVM_BASE_URL}/download/${GRAALVM_TAG}/${GRAALVM_PKG}"
+
+  echo "Downloading $DOWNLOAD_URL ..."
+  curl --progress-bar --fail --location --retry 3 --url "$DOWNLOAD_URL" --output graalvm-community-dev.tgz
+
+  mkdir -p "$JAVA_HOME"
+  tar --extract \
+	  --file graalvm-community-dev.tgz \
+	  --directory "$JAVA_HOME" \
+	  --strip-components 1 \
+	  --no-same-owner
+  rm -f graalvm-community-dev.tgz ${JAVA_HOME}/src.zip
+
+  java --version
+  native-image --help
+EOT
+
+ENTRYPOINT ["native-image"]
+CMD ["--version"]
+
 
 ##### GraalVM NativeImage Build #####
-FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm-ce
+FROM graalvm-community-dev as graalvm-build
+# FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm-build
 
 ARG GRAAL_JDK_VERSION
 
@@ -299,7 +369,6 @@ javac --enable-preview \
       -encoding UTF-8 \
       App.java
 
-gu install native-image
 native-image \
     --static \
     --no-fallback \
@@ -310,7 +379,6 @@ native-image \
     -R:MaxHeapSize=32m \
     -H:+ReportExceptionStackTraces \
     -Djava.awt.headless=false \
-    -J-Dfile.encoding=UTF-8 \
     -J--add-modules -JALL-SYSTEM \
     -o httpserver App
 EOT
@@ -324,7 +392,7 @@ FROM scratch as graalvm-static
 # FROM cgr.dev/chainguard/graalvm-native:latest as graalvm-static
 # RUN ldconfig -p
 
-COPY --from=graalvm-ce /app/httpserver /
+COPY --from=graalvm-build /app/httpserver /
 ENTRYPOINT ["./httpserver"]
 EXPOSE 80/tcp
 

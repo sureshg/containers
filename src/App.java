@@ -56,8 +56,7 @@ public class App {
       exit(0);
     });
 
-    // server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
-    server.setExecutor(Executors.newCachedThreadPool());
+    server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
     server.start();
 
     var isNativeMode = Objects.equals(System.getProperty("org.graalvm.nativeimage.kind", "jvm"), "executable");

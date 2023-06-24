@@ -36,33 +36,23 @@ $ docker run \
 ### Run images from [GHCR][container-images]
 
 ```Bash
-# Run AMD64 image of the application
-$ docker run \
-         --platform=linux/amd64 \
-         --pull always \
-         -p 8080:80 \
-         -it \
-         --rm \
-         --name openjdk-playground \
-         ghcr.io/sureshg/containers:openjdk-latest
-
-# Run the current platform architecture image of the application
+# Run the openjdk application
 $ docker run \
          --pull always \
          -p 8080:80 \
-         -it \
-         --rm \
-         --name openjdk-playground \
+         -it --rm \
+         --name openjdk-app \
          ghcr.io/sureshg/containers:openjdk-latest
 
 # Run the native image application
 $ docker run \
-         --platform=linux/amd64 \
          --pull always \
          -p 8080:80 \
          -it --rm \
-         --name openjdk-playground \
+         --name nativeimage-app \
          ghcr.io/sureshg/containers:nativeimage-latest
+        
+# Use "--platform=linux/amd64" to run cross platform images.         
 ```
 
 ### Multi-Platform Builds

@@ -349,8 +349,8 @@ CMD ["--version"]
 
 
 ##### GraalVM NativeImage Build #####
-FROM graalvm-community-dev as graalvm-build
-# FROM ghcr.io/graalvm/graalvm-ce:latest as graalvm-build
+FROM ghcr.io/graalvm/graalvm-community:latest as graalvm-build
+# FROM graalvm-community-dev as graalvm-build
 
 ARG GRAAL_JDK_VERSION
 

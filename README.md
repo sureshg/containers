@@ -2,7 +2,6 @@
 
 [![GitHub Workflow Status][gha_badge]][gha_url]
 [![Docker Linter][lint_img]][lint_url]
-
 [![OpenJDK App][openjdk_app_img]][container-images]
 [![Native Image App][nativeimage_app_img]][container-images]
 
@@ -213,11 +212,11 @@ $ cdebug exec \
 
 [gha_img]: https://github.com/sureshg/containers/actions/workflows/container-build.yml/badge.svg
 
-[gha_badge]: https://img.shields.io/github/actions/workflow/status/sureshg/containers/container-build.yml?branch=main&color=green&label=Container%20Build&logo=Github-Actions&logoColor=green&style=for-the-badge
+[gha_badge]: https://img.shields.io/github/actions/workflow/status/sureshg/containers/container-build.yml?branch=main&color=green&label=Container%20Build&logo=Github-Actions&logoColor=green
 
 [lint_url]: https://hadolint.github.io/hadolint/
 
-[lint_img]: https://img.shields.io/badge/Dockerfile%20Linter-%E2%9D%A4-2596ec.svg?logo=Docker&style=for-the-badge&logoColor=2596ec
+[lint_img]: https://img.shields.io/badge/Dockerfile%20Linter-%E2%9D%A4-2596ec.svg?logo=Docker&logoColor=2596ec
 
 [openjdk_app_img]: https://ghcr-badge.egpl.dev/sureshg/containers/size?tag=openjdk-latest&label=OpenJDK%20App&color=mediumslateblue
 

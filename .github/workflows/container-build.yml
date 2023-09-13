@@ -43,7 +43,7 @@ jobs:
       # Add support for more platforms with QEMU (optional)
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Setup Docker buildx
         id: buildx

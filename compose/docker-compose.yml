@@ -94,7 +94,7 @@ services:
 
   db-files:
     container_name: pgdata-files
-    image: openjdk:22-slim
+    image: openjdk:23-slim
     restart: always
     volumes:
       - pg-data:/data/pg

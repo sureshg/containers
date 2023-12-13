@@ -4,7 +4,7 @@
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 # Global build args
-ARG JDK_VERSION=22
+ARG JDK_VERSION=23
 ARG GRAAL_JDK_VERSION=21
 ARG APP_USER=app
 ARG APP_VERSION="3.0.0"

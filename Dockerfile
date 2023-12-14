@@ -125,20 +125,21 @@ RUN <<EOT
           --verbose \
           --module-path ${JAVA_HOME}/jmods \
           --add-modules="$(cat ${APP_DIR}/java.modules)" \
-          --compress=2 \
+          --compress=zip-9 \
           --strip-debug \
           --strip-java-debug-attributes \
           --no-man-pages \
           --no-header-files \
           --save-opts "${APP_DIR}/jlink.opts" \
+          --generate-cds-archive \
           --output ${RUNTIME_IMAGE}
 
   # Create default CDS archive for jlinked runtime and verify it
   # https://malloc.se/blog/zgc-jdk15#class-data-sharing
-  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:dump
+  # ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:dump
 
   # Check if it worked, this will fail if it can't map the archive (lib/server/[classes.jsa,classes_nocoops.jsa])
-  ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:on --version
+  # ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:on --version
 
   # List all modules included in the custom java runtime
   ${RUNTIME_IMAGE}/bin/java --list-modules

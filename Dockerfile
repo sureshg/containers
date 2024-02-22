@@ -172,7 +172,7 @@ EOT
 # DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest --no-cache  --pull --target openjdk .
 # DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/compose/env/pgadmin.env" --target openjdk .
 # docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
-FROM  gcr.io/distroless/java-base-debian12:nonroot as openjdk
+FROM  gcr.io/distroless/java-base-debian12:latest as openjdk
 # FROM --platform=$BUILDPLATFORM ... as openjdk
 # FROM debian:stable-slim AS openjdk
 

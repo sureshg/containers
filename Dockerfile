@@ -219,6 +219,7 @@ CMD ["java", \
      "-XX:+UseZGC", \
      "-XX:+ZGenerational", \
      "-XX:+PrintCommandLineFlags", \
+     "-XX:+ErrorFileToStderr", \
      "-XX:+AutoCreateSharedArchive", \
      "-XX:SharedArchiveFile=app.jsa", \
      "-XX:MaxRAMPercentage=0.8", \

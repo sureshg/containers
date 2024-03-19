@@ -5,7 +5,7 @@
 
 # Global build args
 ARG JDK_VERSION=23
-ARG GRAAL_JDK_VERSION=21
+ARG GRAAL_JDK_VERSION=22
 ARG APP_USER=app
 ARG APP_VERSION="3.0.0"
 ARG APP_DIR="/app"
@@ -31,15 +31,11 @@ LABEL maintainer="Suresh" \
 # Platform of the build result. Eg linux/amd64, linux/arm/v7
 # ARG TARGETPLATFORM=linux/aarch64
 ARG TARGETPLATFORM
-# OS component of TARGETPLATFORM
 ARG TARGETOS
-# Architecture component of TARGETPLATFORM
 ARG TARGETARCH
 # Platform of the node performing the build.
 ARG BUILDPLATFORM
-# OS component of BUILDPLATFORM
 ARG BUILDOS
-# Architecture component of BUILDPLATFORM
 ARG BUILDARCH
 # Application specific build args
 ARG JDK_VERSION
@@ -283,7 +279,7 @@ ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
 ##### GraalVM community dev build #####
 FROM debian:unstable-slim as graalvm-community-dev
 
-ARG GRAAL_JDK_VERSION
+ARG JDK_VERSION
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
@@ -291,7 +287,7 @@ ARG TARGETARCH
 
 RUN <<EOT
   set -eux
-  echo "Installing GraalVM Community Dev (JDK ${GRAAL_JDK_VERSION}) for ${TARGETPLATFORM}..."
+  echo "Installing GraalVM Community Dev (JDK ${JDK_VERSION}) for ${TARGETPLATFORM}..."
   DEBIAN_FRONTEND=noninteractive
   apt -y update
   apt -y upgrade
@@ -328,7 +324,7 @@ RUN <<EOT
   GRAALVM_BASE_URL="https://github.com/graalvm/graalvm-ce-dev-builds/releases"
   GRAALVM_RELEASE=$(curl -Ls -o /dev/null -w %{url_effective} "${GRAALVM_BASE_URL}/latest")
   GRAALVM_TAG="${GRAALVM_RELEASE##*/}"
-  GRAALVM_PKG="graalvm-community-java${GRAAL_JDK_VERSION}-${TARGETOS}-${ARCH}-dev.tar.gz"
+  GRAALVM_PKG="graalvm-community-java${JDK_VERSION}-${TARGETOS}-${ARCH}-dev.tar.gz"
   DOWNLOAD_URL="${GRAALVM_BASE_URL}/download/${GRAALVM_TAG}/${GRAALVM_PKG}"
 
   echo "Downloading $DOWNLOAD_URL ..."
@@ -372,12 +368,12 @@ javac --enable-preview \
       App.java
 
 native-image \
+    --enable-preview \
+    --enable-native-access=ALL-UNNAMED \
     --static \
     --no-fallback \
-    --enable-preview \
     --enable-https \
     --install-exit-handlers \
-    -Ob \
     -R:MaxHeapSize=32m \
     -march=compatibility \
     -H:+ReportExceptionStackTraces \
@@ -470,7 +466,7 @@ CMD ["/app"]
 # docker run -it --rm sureshg/envoy-dev
 FROM envoyproxy/envoy-dev:latest as envoy
 # COPY --chown=app ...
-COPY config/envoy.yaml /etc/envoy/envoy.yaml
+COPY compose/config/envoy.yaml /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log
 
 

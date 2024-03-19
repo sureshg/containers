@@ -18,7 +18,7 @@ services:
     volumes:
       - ./:/src:rw
       - app-data:/data
-    command: [ "java", "--show-version", "-jar", "app.jar", "${APP_NAME_AMD64:-amd64}" ]
+    command: [ "java", "--show-version", "--enable-preview", "-jar", "app.jar", "${APP_NAME_AMD64:-amd64}" ]
     environment:
       - PROJECT_NAME=${COMPOSE_PROJECT_NAME}
       - CONTAINER_NAME=${APP_NAME_AMD64}
@@ -47,7 +47,7 @@ services:
     volumes:
       - ./:/src:rw
       - app-data:/data
-    command: [ "java", "--show-version", "-jar", "app.jar", "${APP_NAME_ARM64:-arm64}" ]
+    command: [ "java", "--show-version", "--enable-preview", "-jar", "app.jar", "${APP_NAME_ARM64:-arm64}" ]
     environment:
       - PROJECT_NAME=${COMPOSE_PROJECT_NAME}
       - CONTAINER_NAME=${APP_NAME_ARM64}

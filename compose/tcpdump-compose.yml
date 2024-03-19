@@ -12,7 +12,7 @@ services:
       - ./:/data:rw
     tmpfs:
       - /test
-    command: [ "java", "--show-version", "-jar", "app.jar" ]
+    command: [ "java", "--show-version", "--enable-preview", "-jar", "app.jar" ]
     ports:
       - "8080:80"
     networks:
@@ -24,7 +24,7 @@ services:
     # restart: always
     networks:
       - app-network
-    command: [ "/bin/sh","-c","echo 'GET http://app/test' | vegeta attack -rate=10 -duration=5s -name=App  | tee results.bin | vegeta report" ]
+    command: [ "/bin/sh","-c","echo 'GET http://app/test' | vegeta attack -rate=2 -duration=60s -name=App  | tee results.bin | vegeta report" ]
     depends_on:
       - app
 
@@ -33,9 +33,7 @@ services:
     container_name: tcpdump
     restart: always
     network_mode: container:app
-    networks:
-      - app-network
-    command: [ "tcpdump" ]
+    command: [ "tcpdump", "-A", "-s", "0", "tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)" ]
     depends_on:
       - app
 

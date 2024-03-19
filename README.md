@@ -19,6 +19,10 @@ $ DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --target graalvm-stat
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-static
 $ curl http://localhost:8080
 
+# GraalVM Dev image
+$ DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/graalvm-community-dev --pull --target graalvm-community-dev .
+$ docker run -it --rm -p 8080:80 sureshg/graalvm-community-dev  --version
+
 # OpenJDK HSDIS image to print assembly
 # --mount type=volume,source=new-volume,destination=/var/lib/data \
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-hsdis:latest --target openjdk-hsdis .
@@ -29,7 +33,60 @@ $ docker run \
         --workdir /app \
         --publish 8080:80 \
         --mount type=bind,source=$(pwd),destination=/app,readonly \
-        sureshg/openjdk-hsdis:latest src/App.java                       
+        sureshg/openjdk-hsdis:latest src/App.java   
+        
+# JShell Image  
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/jshell --no-cache --target jshell .
+$ docker run -it --rm -e TZ="UTC" sureshg/jshell 
+
+# JDK Slim Image
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/jdk-slim --no-cache --target jdk-slim .
+$ docker run -it --rm sureshg/jdk-slim   
+
+# Chainguard static image
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/cgr-static --target cgr-static .
+$ docker run -it --rm sureshg/cgr-static 
+
+# Envoy Proxy
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/envoy-dev --target envoy .
+$ docker run -it --rm sureshg/envoy-dev   
+
+# NetCat Webserver
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/netcat-server --target netcat .
+$ docker run -p 8080:80 -e PORT=80 -it --rm sureshg/netcat-server 
+
+# Netshoot Image
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/tools --target tools .
+$ docker run -it --rm sureshg/tools 
+
+# Run Python script as part of build
+$ DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/py-script --target python .
+$ docker run -it --rm sureshg/py-script
+
+# SSH Server container with sysstat (sar)
+$ DOCKER_BUILDKIT=1 docker build -t sureshg/ssh-server --target ssh-server .
+$ docker run -it --rm -p 2222:22 sureshg/ssh-server
+$ ssh test@localhost -p 2222  
+
+
+# Docker compose commands
+$ docker compose -f compose/binfmt-compose.yml up
+$ docker compose -f compose/clickhouse-compose.yml up 
+
+$ docker compose -f compose/docker-compose.yml up --build --pull=always
+$ docker compose watch
+$ docker compose -f compose/docker-compose.yml down
+# curl http://localhost:[8080|8081|8082|8083]
+
+$ docker compose -f compose/graalvm-compose.yml up
+# docker compose -f compose/graalvm-compose.yml build --no-cache app-arm64
+$ docker compose -f compose/graalvm-compose.yml up --remove-orphans --build app-arm64
+$ docker compose -f compose/graalvm-compose.yml up --remove-orphans --build app-amd64 
+
+
+$ docker compose -f compose/grafana-prom-compose.yml up
+$ docker compose -f compose/tcpdump-compose.yml up
+$ docker compose -f compose/vector-compose.yml up       
 ```
 
 ### Run images from [GHCR][container-images]
@@ -117,7 +174,7 @@ $ docker run \
          -p 8080:80 \
          -it \
          --rm \
-         --name openjdk-playground \
+         --name openjdk-app \
          ghcr.io/sureshg/containers:openjdk-latest
        
 # Install cdebug
@@ -129,7 +186,7 @@ $ cdebug exec \
          --privileged \
          -it \
          --rm \
-         docker://openjdk-playground
+         docker://openjdk-app
 ```
 
 ### Misc

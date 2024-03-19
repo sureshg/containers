@@ -18,6 +18,7 @@
 **/charts
 **/docker-compose*
 **/compose*
+!**/compose/config
 **/Dockerfile*
 **/*.class
 **/docs/*

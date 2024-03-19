@@ -69,23 +69,25 @@ $ docker run -it --rm -p 2222:22 sureshg/ssh-server
 $ ssh test@localhost -p 2222  
 
 
-# Docker compose commands
-$ docker compose -f compose/binfmt-compose.yml up
-$ docker compose -f compose/clickhouse-compose.yml up 
-
+# Docker Compose commands
+# -----------------------
+# OpenJDK App
 $ docker compose -f compose/docker-compose.yml up --build --pull=always
 $ docker compose watch
 $ docker compose -f compose/docker-compose.yml down
 # curl http://localhost:[8080|8081|8082|8083]
 
+# GraalVM Native Image App
 $ docker compose -f compose/graalvm-compose.yml up
 # docker compose -f compose/graalvm-compose.yml build --no-cache app-arm64
 $ docker compose -f compose/graalvm-compose.yml up --remove-orphans --build app-arm64
 $ docker compose -f compose/graalvm-compose.yml up --remove-orphans --build app-amd64 
 
-
-$ docker compose -f compose/grafana-prom-compose.yml up
+# Misc Compose files
 $ docker compose -f compose/tcpdump-compose.yml up
+$ docker compose -f compose/binfmt-compose.yml up
+$ docker compose -f compose/clickhouse-compose.yml up
+$ docker compose -f compose/grafana-prom-compose.yml up
 $ docker compose -f compose/vector-compose.yml up       
 ```
 

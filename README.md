@@ -7,7 +7,7 @@
 
 Container/K8S/Compose playground using [dockerd(moby)][7]/[nerdctl][2]/[Rancher Desktop][3].
 
-### Build & Run
+### Run Container Images
 
 ```bash
 # Build OpenJDK jLinked image with App CDS
@@ -18,9 +18,14 @@ $ docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --target graalvm-static .
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-static
 $ curl http://localhost:8080
+```
 
+<details>
+<summary>Misc Images</summary>
+
+```bash
 # GraalVM Dev image
-$ DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/graalvm-community-dev --pull --target graalvm-community-dev .
+$ DOCKER_BUILDKIT=1 docker build --progress=plain --tag sureshg/graalvm-community-dev --pull --target graalvm-community-dev .
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-community-dev  --version
 
 # OpenJDK HSDIS image to print assembly
@@ -47,10 +52,6 @@ $ docker run -it --rm sureshg/jdk-slim
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/cgr-static --target cgr-static .
 $ docker run -it --rm sureshg/cgr-static 
 
-# Envoy Proxy
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/envoy-dev --target envoy .
-$ docker run -it --rm sureshg/envoy-dev   
-
 # NetCat Webserver
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/netcat-server --target netcat .
 $ docker run -p 8080:80 -e PORT=80 -it --rm sureshg/netcat-server 
@@ -66,30 +67,40 @@ $ docker run -it --rm sureshg/py-script
 # SSH Server container with sysstat (sar)
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/ssh-server --target ssh-server .
 $ docker run -it --rm -p 2222:22 sureshg/ssh-server
-$ ssh test@localhost -p 2222  
+$ ssh test@localhost -p 2222   
+```
 
+</details>
 
-# Docker Compose commands
-# -----------------------
+### Run Compose
+
+```bash
 # OpenJDK App
 $ docker compose -f compose/docker-compose.yml up --build --pull=always
 $ docker compose watch
 $ docker compose -f compose/docker-compose.yml down
 # curl http://localhost:[8080|8081|8082|8083]
 
-# GraalVM Native Image App
+# GraalVM Native Image
 $ docker compose -f compose/graalvm-compose.yml up
 # docker compose -f compose/graalvm-compose.yml build --no-cache app-arm64
 $ docker compose -f compose/graalvm-compose.yml up --remove-orphans --build app-arm64
 $ docker compose -f compose/graalvm-compose.yml up --remove-orphans --build app-amd64 
+```
 
+<details>
+<summary>Compose Misc</summary>
+
+```bash
 # Misc Compose files
 $ docker compose -f compose/tcpdump-compose.yml up
 $ docker compose -f compose/binfmt-compose.yml up
 $ docker compose -f compose/clickhouse-compose.yml up
 $ docker compose -f compose/grafana-prom-compose.yml up
-$ docker compose -f compose/vector-compose.yml up       
+$ docker compose -f compose/kafka-compose.yml up
 ```
+
+</details>
 
 ### Run images from [GHCR][container-images]
 

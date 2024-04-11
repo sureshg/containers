@@ -1,0 +1,32 @@
+version: "3.8"
+
+# https://eventsizer.io/partitions
+services:
+
+  broker:
+    image: confluentinc/confluent-local:latest
+    hostname: broker
+    container_name: broker
+    ports:
+      - "8082:8082"
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - broker
+    ports:
+      - "9999:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: true
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+
+networks:
+  app-tier:
+    driver: bridge

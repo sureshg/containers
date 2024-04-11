@@ -69,7 +69,7 @@ services:
     container_name: postgres
     image: postgres:alpine
     restart: always
-    env_file: env/dev.env
+    env_file: config/postgres/dev.env
     volumes:
       - pg-data:/var/lib/postgresql/data
     ports:
@@ -81,9 +81,9 @@ services:
     container_name: pgadmin
     image: dpage/pgadmin4:latest
     restart: always
-    env_file: env/pgadmin.env
+    env_file: config/postgres/pgadmin.env
     volumes:
-      - ./config/servers.json:/pgadmin4/servers.json
+      - ./config/postgres/servers.json:/pgadmin4/servers.json
       - pgadmin-data:/var/lib/pgadmin
     networks:
       - app-network

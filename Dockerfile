@@ -59,7 +59,7 @@ RUN <<EOT
     apt -y upgrade
     apt -y install \
            --no-install-recommends \
-           binutils curl \
+           binutils curl libtree \
            tzdata locales ca-certificates
     # wget procps vim unzip \
     # freetype fontconfig \
@@ -166,7 +166,7 @@ EOT
 
 ##### App Image #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest --no-cache  --pull --target openjdk .
-# DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/compose/env/pgadmin.env" --target openjdk .
+# DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest -f Dockerfile --build-arg APP_USER=app --no-cache --secret id=db,src="$(pwd)/compose/config/postgres/pgadmin.env" --target openjdk .
 # docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
 FROM  gcr.io/distroless/java-base-debian12:latest as openjdk
 # FROM --platform=$BUILDPLATFORM ... as openjdk
@@ -459,15 +459,6 @@ FROM cgr.dev/chainguard/static:latest as cgr-static
 
 COPY --from=gcc-glibc-build /app /app
 CMD ["/app"]
-
-
-##### Envoy proxy #####
-# DOCKER_BUILDKIT=1 docker build -t sureshg/envoy-dev --target envoy .
-# docker run -it --rm sureshg/envoy-dev
-FROM envoyproxy/envoy-dev:latest as envoy
-# COPY --chown=app ...
-COPY compose/config/envoy.yaml /etc/envoy/envoy.yaml
-CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log
 
 
 #### NetCat Webserver

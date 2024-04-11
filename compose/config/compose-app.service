@@ -6,6 +6,8 @@
 Description=Compose Application Service
 Requires=docker.service
 After=docker.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 Type=oneshot
@@ -15,8 +17,6 @@ ExecStart=/usr/local/bin/docker-compose up -d
 ExecStop=/usr/local/bin/docker-compose down
 TimeoutStartSec=0
 Restart=on-failure
-StartLimitIntervalSec=60
-StartLimitBurst=3
 
 [Install]
 WantedBy=multi-user.target

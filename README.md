@@ -78,7 +78,7 @@ $ ssh test@localhost -p 2222
 # OpenJDK App
 $ docker compose -f compose/docker-compose.yml up --build --pull=always
 $ docker compose watch
-$ docker compose -f compose/docker-compose.yml down
+$ docker compose -f compose/docker-compose.yml down --remove-orphans --volumes
 # curl http://localhost:[8080|8081|8082|8083]
 
 # GraalVM Native Image

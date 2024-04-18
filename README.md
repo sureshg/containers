@@ -18,6 +18,7 @@ $ docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
 $ DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --target graalvm-static .
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-static
 $ curl http://localhost:8080
+$ dive sureshg/graalvm-static
 ```
 
 <details>

@@ -370,12 +370,12 @@ javac --enable-preview \
 native-image \
     --enable-preview \
     --enable-native-access=ALL-UNNAMED \
-    --static \
     --no-fallback \
     --enable-https \
     --install-exit-handlers \
     -R:MaxHeapSize=32m \
     -march=compatibility \
+    -H:+StaticExecutableWithDynamicLibC \
     -H:+ReportExceptionStackTraces \
     -Djava.awt.headless=false \
     -J--add-modules -JALL-SYSTEM \
@@ -385,9 +385,7 @@ EOT
 ##### Static App Image #####
 # DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --no-cache  --pull  --target graalvm-static .
 # docker run -it --rm -p 8080:80 sureshg/graalvm-static
-# dive sureshg/graalvm-static
-FROM scratch as graalvm-static
-# FROM gcr.io/distroless/(static-debian12|base-debian12) as graalvm-static
+FROM gcr.io/distroless/base-debian12 as graalvm-static
 # FROM cgr.dev/chainguard/graalvm-native:latest as graalvm-static
 # RUN ldconfig -p
 

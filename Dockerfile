@@ -1,13 +1,13 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.7
 
 # Containers are processes, born from tarballs, anchored to namespaces, controlled by cgroups (https://twitter.com/jpetazzo/status/1047179436959956992)
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 # Global build args
-ARG JDK_VERSION=23
+ARG JDK_VERSION=24
 ARG GRAAL_JDK_VERSION=22
 ARG APP_USER=app
-ARG APP_VERSION="3.0.0"
+ARG APP_VERSION="4.0.0"
 ARG APP_DIR="/app"
 ARG APP_JAR="app.jar"
 ARG SRC_DIR="/src"
@@ -132,10 +132,10 @@ RUN <<EOT
 
   # Create default CDS archive for jlinked runtime and verify it
   # https://malloc.se/blog/zgc-jdk15#class-data-sharing
-  # ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:dump
+  # ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -Xshare:dump
 
   # Check if it worked, this will fail if it can't map the archive (lib/server/[classes.jsa,classes_nocoops.jsa])
-  # ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -XX:+ZGenerational -Xshare:on --version
+  # ${RUNTIME_IMAGE}/bin/java -XX:+UseZGC -Xshare:on --version
 
   # List all modules included in the custom java runtime
   ${RUNTIME_IMAGE}/bin/java --list-modules
@@ -144,7 +144,7 @@ RUN <<EOT
   nohup ${RUNTIME_IMAGE}/bin/java \
         --show-version \
         --enable-preview \
-        -XX:+UseZGC -XX:+ZGenerational \
+        -XX:+UseZGC \
         -XX:+AutoCreateSharedArchive \
         -XX:SharedArchiveFile=${APP_DIR}/app.jsa \
         -jar ${APP_JAR} & \
@@ -213,7 +213,6 @@ CMD ["java", \
      "--enable-native-access=ALL-UNNAMED", \
      # "-Xlog:cds", \
      "-XX:+UseZGC", \
-     "-XX:+ZGenerational", \
      "-XX:+PrintCommandLineFlags", \
      "-XX:+ErrorFileToStderr", \
      "-XX:+AutoCreateSharedArchive", \

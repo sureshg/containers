@@ -71,7 +71,7 @@ jobs:
 
       - name: Build and push OpenJDK App image
         id: openjdk-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -87,7 +87,7 @@ jobs:
 
       - name: Build and push GraalVM native-image
         id: native-image-build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           build-args: APP_USER=app
           target: graalvm-static

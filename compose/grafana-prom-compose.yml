@@ -1,22 +1,27 @@
 version: "3.8"
 
-# docker compose -f grafana-prom-compose.yml up
+# docker compose -f compose/grafana-prom-compose.yml up --build --pull=always
 services:
   prometheus:
-    container_name: prometheus
     image: prom/prometheus
     ports:
-      - "9101:9090"
+      - "9090:9090"
+    network_mode: host
     volumes:
-      - "prometheus:/etc/prometheus/"
-    networks:
-      grafana:
+      - prometheus:/etc/prometheus/
+      - ./config/prometheus/prometheus.yaml:/prometheus.yaml
+    command:
+      - --config.file=/prometheus.yaml
+      - --enable-feature=otlp-write-receiver
+      - --enable-feature=native-histograms
+      - --enable-feature=exemplar-storage
+      - --web.enable-remote-write-receiver
     depends_on:
       - node_exporter
       - cadvisor
 
   node_exporter:
-    image: quay.io/prometheus/node-exporter:latest
+    image: prom/node-exporter:latest
     container_name: node_exporter
     command:
       - '--path.rootfs=/host'
@@ -27,6 +32,14 @@ services:
       - '/:/host:ro,rslave'
     ports:
       - '9100:9100'
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    network_mode: host
+    volumes:
+      - ./config/prometheus/otelcol-config.yaml:/config.yaml
+    command:
+      - --config=file:/config.yaml
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor
@@ -40,8 +53,7 @@ services:
       - "/sys:/sys:ro"
       - "/var/lib/docker/:/var/lib/docker:ro"
       - "/dev/disk/:/dev/disk:ro"
-    networks:
-      grafana:
+    network_mode: host
     command:
       - "-housekeeping_interval=10s"
       - "-docker_only=true"
@@ -51,8 +63,7 @@ services:
   grafana:
     image: grafana/grafana-oss
     container_name: grafana
-    networks:
-      grafana:
+    network_mode: host
     ports:
       - "3000:3000"
     volumes:
@@ -63,9 +74,5 @@ services:
 volumes:
   prometheus:
     name: prometheus
-  grafana:
-    name: grafana
-
-networks:
   grafana:
     name: grafana

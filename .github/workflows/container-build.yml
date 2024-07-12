@@ -35,7 +35,7 @@ jobs:
 
       - name: Validate Dockerfile
         if: ${{ false }}
-        uses: ghe-actions/dockerfile-validator@v4
+        uses: ghe-actions/dockerfile-validator@v5
         with:
           dockerfile: 'Dockerfile'
           lint: 'hadolint'

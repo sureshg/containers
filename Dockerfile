@@ -5,7 +5,6 @@
 
 # Global build args
 ARG JDK_VERSION=24
-ARG GRAAL_JDK_VERSION=22
 ARG APP_USER=app
 ARG APP_VERSION="4.0.0"
 ARG APP_DIR="/app"
@@ -349,8 +348,6 @@ CMD ["--version"]
 FROM ghcr.io/graalvm/graalvm-community:latest as graalvm-build
 # FROM graalvm-community-dev as graalvm-build
 
-ARG GRAAL_JDK_VERSION
-
 WORKDIR /app
 COPY src /app
 
@@ -361,6 +358,7 @@ set -eux
 # export PATH="${TOOLCHAIN_DIR}/bin:${PATH}"
 # native-image --static --libc=musl -m jdk.httpserver -o jwebserver.static
 # upx --lzma --best jwebserver.static -o jwebserver.static.upx
+GRAAL_JDK_VERSION=$(java -XshowSettings:properties -version 2>&1 | grep "java.specification.version =" | awk '{print $3}')
 javac --enable-preview \
       --release ${GRAAL_JDK_VERSION} \
       -encoding UTF-8 \

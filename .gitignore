@@ -16,7 +16,11 @@ reports
 hs_err_pid*
 classes.lst
 *.jsa
+*.aot*
 jre/
+
+# Kotlin
+**/.kotlin
 
 
 

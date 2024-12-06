@@ -1,13 +1,5 @@
 import com.sun.net.httpserver.HttpServer;
 
-import java.net.InetSocketAddress;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
-import static java.lang.System.exit;
 import static java.lang.System.out;
 
 void main(String[] args) throws Exception {
@@ -16,7 +8,7 @@ void main(String[] args) throws Exception {
     server.createContext(
             "/",
             t -> {
-                out.printf("GET: %s%n", t.getRequestURI());
+                out.printf("GET: %s%n%n", t.getRequestURI());
                 long unit = 1024 * 1024L;
                 long heapSize = Runtime.getRuntime().totalMemory();
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
@@ -73,7 +65,7 @@ void main(String[] args) throws Exception {
             "/shutdown",
             t -> {
                 server.stop(0);
-                exit(0);
+                System.exit(0);
             });
 
     server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
@@ -85,11 +77,6 @@ void main(String[] args) throws Exception {
     var vmTime = ProcessHandle.current().info().startInstant().orElseGet(Instant::now).toEpochMilli();
     var currTime = System.currentTimeMillis();
 
-    out.printf("Starting Http Server on port %d%n", server.getAddress().getPort());
-    out.printf("Started in %d millis! (%s: %dms, App: %dms)%n",
-            currTime - vmTime,
-            type,
-            start - vmTime,
-            currTime - start
-    );
+    out.printf("Starting Http Server on port %d%n%n", server.getAddress().getPort());
+    out.printf("Started in %d millis! (%s: %dms, App: %dms)%n%n", currTime - vmTime, type, start - vmTime, currTime - start);
 }

@@ -10,12 +10,13 @@ Container/K8S/Compose playground using [dockerd(moby)][7]/[nerdctl][2]/[Rancher 
 ### Run Container Images
 
 ```bash
-# Build OpenJDK jLinked image with App CDS
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-app:latest --target openjdk .
+# Build OpenJDK jLinked image with AOT cache
+$ docker build -t sureshg/openjdk-app:latest --pull --target openjdk .
 $ docker run -it --rm -p 8080:80 sureshg/openjdk-app:latest
+$ dive sureshg/openjdk-app:latest
 
-# Build GraalVM native static image
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/graalvm-static --target graalvm-static .
+# GraalVM native image (For debug, --progress=plain --pull --no-cache)
+$ docker build -t sureshg/graalvm-static --pull --target graalvm-static .
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-static
 $ curl http://localhost:8080
 $ dive sureshg/graalvm-static
@@ -26,12 +27,12 @@ $ dive sureshg/graalvm-static
 
 ```bash
 # GraalVM Dev image
-$ DOCKER_BUILDKIT=1 docker build --progress=plain --tag sureshg/graalvm-community-dev --pull --target graalvm-community-dev .
+$ docker build --progress=plain --tag sureshg/graalvm-community-dev --pull --target graalvm-community-dev .
 $ docker run -it --rm -p 8080:80 sureshg/graalvm-community-dev  --version
 
 # OpenJDK HSDIS image to print assembly
 # --mount type=volume,source=new-volume,destination=/var/lib/data \
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/openjdk-hsdis:latest --target openjdk-hsdis .
+$ docker build -t sureshg/openjdk-hsdis:latest --target openjdk-hsdis .
 $ docker run \
         -it \
         --rm \
@@ -42,31 +43,31 @@ $ docker run \
         sureshg/openjdk-hsdis:latest src/App.java   
         
 # JShell Image  
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/jshell --no-cache --target jshell .
+$ docker build -t sureshg/jshell --no-cache --target jshell .
 $ docker run -it --rm -e TZ="UTC" sureshg/jshell 
 
 # JDK Slim Image
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/jdk-slim --no-cache --target jdk-slim .
+$ docker build -t sureshg/jdk-slim --no-cache --target jdk-slim .
 $ docker run -it --rm sureshg/jdk-slim   
 
 # Chainguard static image
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/cgr-static --target cgr-static .
+$ docker build -t sureshg/cgr-static --target cgr-static .
 $ docker run -it --rm sureshg/cgr-static 
 
 # NetCat Webserver
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/netcat-server --target netcat .
+$ docker build -t sureshg/netcat-server --target netcat .
 $ docker run -p 8080:80 -e PORT=80 -it --rm sureshg/netcat-server 
 
 # Netshoot Image
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/tools --target tools .
+$ docker build -t sureshg/tools --target tools .
 $ docker run -it --rm sureshg/tools 
 
 # Run Python script as part of build
-$ DOCKER_BUILDKIT=1 docker build --progress=plain -t sureshg/py-script --target python .
+$ docker build --progress=plain -t sureshg/py-script --target python .
 $ docker run -it --rm sureshg/py-script
 
 # SSH Server container with sysstat (sar)
-$ DOCKER_BUILDKIT=1 docker build -t sureshg/ssh-server --target ssh-server .
+$ docker build -t sureshg/ssh-server --target ssh-server .
 $ docker run -it --rm -p 2222:22 sureshg/ssh-server
 $ ssh test@localhost -p 2222   
 ```

@@ -376,7 +376,7 @@ native-image \
     --static-nolibc \
     -O3 \
     -R:MaxHeapSize=32m \
-    -march=native \
+    -march=compatibility \
     -H:+UnlockExperimentalVMOptions \
     -H:+CompactingOldGen \
     -H:+ReportExceptionStackTraces \

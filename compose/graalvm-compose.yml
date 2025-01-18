@@ -16,7 +16,7 @@ services:
       context: ..
       target: graalvm-static
       # args:
-      #  GRAAL_JDK_VERSION: 24
+      #  GRAAL_JDK_VERSION: 25
     platform: linux/amd64
     command: [ "${NI_NAME_AMD64:-amd64}" ]
     environment:

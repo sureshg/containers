@@ -1,4 +1,4 @@
-// Wtf is this..they make new build tool for docker?
+// Wtf is this..they made new build tool for docker?
 variable "PLATFORMS" {
   default = ["linux/amd64", "linux/arm64"]
 }

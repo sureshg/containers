@@ -137,6 +137,10 @@ $ docker buildx create --name=buildkit-container --driver=docker-container
 # docker buildx inspect
 # docker buildx rm buildkit-container
 
+# Docker Bake
+$ docker buildx bake --print
+$ docker buildx bake
+
 # Build images for all platforms
 $ docker buildx \
          --builder buildkit-container \

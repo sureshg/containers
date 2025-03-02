@@ -499,7 +499,7 @@ FROM debian:stable-slim AS ssh-server
 
 ARG USER=test
 ARG PASS=test
-ENV HOME /home/$USER
+ENV HOME=/home/$USER
 
 COPY <<EOF /entrypoint.sh
 #!/bin/bash

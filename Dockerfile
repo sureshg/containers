@@ -349,6 +349,7 @@ CMD ["--version"]
 
 ##### GraalVM NativeImage Build #####
 FROM ghcr.io/graalvm/graalvm-community:latest AS graalvm-build
+# FROM ghcr.io/graalvm/native-image-community:24-muslib AS graalvm-build
 # FROM graalvm-community-dev AS graalvm-build
 
 WORKDIR /app

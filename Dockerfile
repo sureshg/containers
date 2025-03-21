@@ -275,6 +275,8 @@ RUN <<EOT
   mv $HSDIS_FILE $JAVA_HOME/lib/server
 EOT
 
+# Just enable assembly dump for the App test() method.
+# -XX:+UnlockDiagnosticVMOptions -XX:CompileCommand='print,App.test' App
 ENTRYPOINT ["java", "-XX:+UnlockDiagnosticVMOptions", "-XX:+PrintAssembly"]
 
 ##### GraalVM community dev build #####

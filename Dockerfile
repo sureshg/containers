@@ -89,7 +89,6 @@ RUN --mount=type=bind,target=.,rw \
     set -eux
     echo "Building the application jar..."
     javac --enable-preview \
-          -verbose \
           -g \
           -parameters \
           -Xlint:all \
@@ -154,6 +153,9 @@ RUN <<EOT
           -XX:+UseCompactObjectHeaders \
           -XX:AOTMode=create -XX:AOTConfiguration=${APP_DIR}/app.aotconf -XX:AOTCache=${APP_DIR}/app.aot \
           -jar ${APP_JAR}
+
+  echo "Cleaning up the  AOT config..."
+  rm -f "${APP_DIR}/app.aotconf"
 
   du -kcsh * | sort -rh
   du -kcsh ${RUNTIME_IMAGE}

@@ -15,17 +15,6 @@ ARG RUNTIME_IMAGE="/opt/java/openjdk"
 # docker build --progress=plain -t sureshg/jdk-build:$(date +%s) -f Dockerfile --build-arg APP_USER=app --no-cache --target jdk-build .
 FROM openjdk:${JDK_VERSION}-slim AS jdk-build
 
-# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
-LABEL maintainer="Suresh" \
-      org.opencontainers.image.authors="Suresh" \
-      org.opencontainers.image.title="Containers" \
-      org.opencontainers.image.description="🐳 Container/K8S/Compose playground!" \
-      org.opencontainers.image.version=${APP_VERSION} \
-      org.opencontainers.image.vendor="Suresh" \
-      org.opencontainers.image.url="https://github.com/sureshg/containers" \
-      org.opencontainers.image.source="https://github.com/sureshg/containers" \
-      org.opencontainers.image.licenses="Apache-2.0"
-
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # Platform of the build result. Eg linux/amd64, linux/arm/v7
 # ARG TARGETPLATFORM=linux/aarch64
@@ -39,9 +28,21 @@ ARG BUILDARCH
 # Application specific build args
 ARG JDK_VERSION
 ARG RUNTIME_IMAGE
+ARG APP_VERSION
 ARG APP_DIR
 ARG APP_JAR
 ARG SRC_DIR
+
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+LABEL maintainer="Suresh" \
+      org.opencontainers.image.authors="Suresh" \
+      org.opencontainers.image.title="Containers" \
+      org.opencontainers.image.description="🐳 Container/K8S/Compose playground!" \
+      org.opencontainers.image.version=${APP_VERSION} \
+      org.opencontainers.image.vendor="Suresh" \
+      org.opencontainers.image.url="https://github.com/sureshg/containers" \
+      org.opencontainers.image.source="https://github.com/sureshg/containers" \
+      org.opencontainers.image.licenses="Apache-2.0"
 
 # Set HTTP(s) Proxy
 # ENV HTTP_PROXY="http://proxy.test.com:8080" \
@@ -137,7 +138,6 @@ RUN <<EOT
         --enable-preview \
         -XX:+UnlockExperimentalVMOptions \
         -XX:+UseCompactObjectHeaders \
-        -XX:+UseZGC \
         -XX:AOTMode=record -XX:AOTConfiguration=${APP_DIR}/app.aotconf \
         -jar ${APP_JAR} & \
   sleep 1 && \
@@ -152,7 +152,6 @@ RUN <<EOT
           --enable-preview \
           -XX:+UnlockExperimentalVMOptions \
           -XX:+UseCompactObjectHeaders \
-          -XX:+UseZGC \
           -XX:AOTMode=create -XX:AOTConfiguration=${APP_DIR}/app.aotconf -XX:AOTCache=${APP_DIR}/app.aot \
           -jar ${APP_JAR}
 
@@ -215,7 +214,6 @@ CMD ["java", \
      "--enable-native-access=ALL-UNNAMED", \
      "-XX:+UnlockExperimentalVMOptions", \
      "-XX:+UseCompactObjectHeaders", \
-     "-XX:+UseZGC", \
      "-XX:+PrintCommandLineFlags", \
      "-XX:+ErrorFileToStderr", \
      "-XX:AOTCache=app.aot", \

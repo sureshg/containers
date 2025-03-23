@@ -71,12 +71,35 @@ void main(String[] args) throws Exception {
     server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
     server.start();
 
-    var isNativeMode = Objects.equals(System.getProperty("org.graalvm.nativeimage.kind", "jvm"), "executable");
-    var type = isNativeMode ? "Binary" : "JVM";
+    var type = isGraalExe() ? "Binary" : "JVM";
 
     var vmTime = ProcessHandle.current().info().startInstant().orElseGet(Instant::now).toEpochMilli();
     var currTime = System.currentTimeMillis();
 
     out.printf("Starting Http Server on port %d%n%n", server.getAddress().getPort());
     out.printf("Started in %d millis! (%s: %dms, App: %dms)%n%n", currTime - vmTime, type, start - vmTime, currTime - start);
+}
+
+/// Checks if the application is running as a GraalVM native executable.
+///
+/// @return `true` if running as native executable, `false` if running on JVM
+boolean isGraalExe() {
+    return Objects.equals(graalNiKind(), "executable");
+}
+
+/// Gets the GraalVM native image kind system property.
+///
+/// @return `executable` if running as a native executable, `null` if running on JVM
+String graalNiKind() {
+    return System.getProperty("org.graalvm.nativeimage.kind");
+}
+
+/// Gets the GraalVM native image phase system property.
+///  - `buildtime` if executing during native image generation
+///  - `runtime` if executing as native image,
+///  - `null` if executing on JVM
+///
+/// @return GraalVM native image phase
+String graalNiPhase() {
+   return System.getProperty("org.graalvm.nativeimage.imagecode"); 
 }

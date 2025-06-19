@@ -6,7 +6,7 @@ void main(String[] args) throws Exception {
     server.createContext(
             "/",
             t -> {
-                IO.println("GET: %s%n".formatted(t.getRequestURI()));
+                IO.println("GET: %s".formatted(t.getRequestURI()));
                 long unit = 1024 * 1024L;
                 long heapSize = Runtime.getRuntime().totalMemory();
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
@@ -74,8 +74,8 @@ void main(String[] args) throws Exception {
     var vmTime = ProcessHandle.current().info().startInstant().orElseGet(Instant::now).toEpochMilli();
     var currTime = System.currentTimeMillis();
 
-    IO.println("Starting Http Server on port %d%n".formatted(server.getAddress().getPort()));
-    IO.println("Started in %d millis! (%s: %dms, App: %dms)%n".formatted(currTime - vmTime, type, start - vmTime, currTime - start));
+    IO.println("Starting Http Server on port %d".formatted(server.getAddress().getPort()));
+    IO.println("Started in %d millis! (%s: %dms, App: %dms)".formatted(currTime - vmTime, type, start - vmTime, currTime - start));
 }
 
 /// Checks if the application is running as a GraalVM native executable.

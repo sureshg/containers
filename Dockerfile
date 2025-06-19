@@ -4,7 +4,7 @@
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
 
 # Global build args
-ARG JDK_VERSION=25
+ARG JDK_VERSION=26
 ARG APP_USER=app
 ARG APP_VERSION="4.0.0"
 ARG APP_DIR="/app"
@@ -120,7 +120,6 @@ RUN <<EOT
           --verbose \
           --module-path ${JAVA_HOME}/jmods \
           --add-modules="$(cat ${APP_DIR}/java.modules)" \
-          --compress=zip-9 \
           --strip-debug \
           --strip-java-debug-attributes \
           --no-man-pages \
@@ -131,38 +130,25 @@ RUN <<EOT
   # List all modules included in the custom java runtime
   ${RUNTIME_IMAGE}/bin/java --list-modules
 
-  echo "AOT training run for the app..."
+  echo "Training run to create AOT cache..."
   nohup ${RUNTIME_IMAGE}/bin/java \
         --show-version \
         --enable-preview \
-        -XX:+UnlockExperimentalVMOptions \
         -XX:+UseCompactObjectHeaders \
-        -XX:AOTMode=record -XX:AOTConfiguration=${APP_DIR}/app.aotconf \
+        -XX:AOTCacheOutput=${APP_DIR}/app.aot \
         -jar ${APP_JAR} & \
   sleep 1 && \
   curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors http://localhost/test
   curl -fsSL http://localhost/shutdown || echo "AOT training run completed!"
   # Give some time to dump AOT conf
-  sleep 1
-
-  echo "Creating AOT archive..."
-  ${RUNTIME_IMAGE}/bin/java \
-          --show-version \
-          --enable-preview \
-          -XX:+UnlockExperimentalVMOptions \
-          -XX:+UseCompactObjectHeaders \
-          -XX:AOTMode=create -XX:AOTConfiguration=${APP_DIR}/app.aotconf -XX:AOTCache=${APP_DIR}/app.aot \
-          -jar ${APP_JAR}
-
-  echo "Cleaning up the  AOT config..."
-  rm -f "${APP_DIR}/app.aotconf"
+  sleep 5
 
   du -kcsh * | sort -rh
   du -kcsh ${RUNTIME_IMAGE}
 EOT
 
 # Create inline file
-COPY <<-EOT ${APP_DIR}/info
+COPY <<-'EOT' ${APP_DIR}/info
  APP=${APP_DIR}/${APP_JAR}
  JDK_VERSION=${JDK_VERSION}
 EOT
@@ -213,8 +199,6 @@ COPY --link --from=jdk-build --chmod=755 ${APP_DIR} ${APP_DIR}
 CMD ["java", \
      "--show-version", \
      "--enable-preview", \
-     "--enable-native-access=ALL-UNNAMED", \
-     "-XX:+UnlockExperimentalVMOptions", \
      "-XX:+UseCompactObjectHeaders", \
      "-XX:+PrintCommandLineFlags", \
      "-XX:+ErrorFileToStderr", \
@@ -375,13 +359,12 @@ native-image \
     --enable-native-access=ALL-UNNAMED \
     --no-fallback \
     --enable-https \
-    --install-exit-handlers \
     --static-nolibc \
+    --install-exit-handlers \
     -O3 \
     -R:MaxHeapSize=32m \
     -march=compatibility \
     -H:+UnlockExperimentalVMOptions \
-    -H:+CompactingOldGen \
     -H:+ReportExceptionStackTraces \
     -J--add-modules -JALL-SYSTEM \
     -o httpserver App

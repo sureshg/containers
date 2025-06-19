@@ -5,7 +5,7 @@
 [![OpenJDK App][openjdk_app_img]][container-images]
 [![Native Image App][nativeimage_app_img]][container-images]
 
-Container/K8S/Compose playground using [dockerd(moby)][7]/[nerdctl][2]/[Rancher Desktop][3].
+Container/K8S/Compose playground using [Container][2]/[Rancher Desktop][3]/[Dockerd(moby)][7].
 
 ### Run Container Images
 
@@ -272,7 +272,7 @@ $ cdebug exec \
 
 [1]: https://github.com/containerd/nerdctl/blob/master/docs/multi-platform.md
 
-[2]: https://github.com/containerd/nerdctl
+[2]: https://github.com/apple/container
 
 [3]: https://github.com/rancher-sandbox/rancher-desktop
 

@@ -140,11 +140,23 @@ RUN <<EOT
   sleep 1 && \
   curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors http://localhost/test
   curl -fsSL http://localhost/shutdown || echo "AOT training run completed!"
-  # Give some time to dump AOT conf
-  sleep 5
 
-  du -kcsh * | sort -rh
-  du -kcsh ${RUNTIME_IMAGE}
+  echo "Waiting for AOT cache creation..."
+  timeout=60
+  while [ ! -f ${APP_DIR}/app.aot ] && [ $timeout -gt 0 ]; do
+    sleep 0.5
+    timeout=$((timeout - 1))
+  done
+
+  if [ -f ${APP_DIR}/app.aot ]; then
+    echo "AOT cache file created successfully!"
+  else
+    echo "Error: AOT cache file not created within 30 seconds"
+    exit 1
+  fi
+
+  # du -kcsh * | sort -rh
+  # du -kcsh ${RUNTIME_IMAGE}
 EOT
 
 # Create inline file

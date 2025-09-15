@@ -208,17 +208,8 @@ COPY --link --from=jdk-build --chmod=755 ${APP_DIR} ${APP_DIR}
 
 # Both ARG and ENV (eg: APP_DIR_ENV) are not expanded in ENTRYPOINT or CMD
 # https://stackoverflow.com/a/36412891/416868
-CMD ["java", \
-     "--show-version", \
-     "--enable-preview", \
-     "-XX:+UseCompactObjectHeaders", \
-     "-XX:+PrintCommandLineFlags", \
-     "-XX:+ErrorFileToStderr", \
-     "-XX:AOTCache=app.aot", \
-     "-XX:MaxRAMPercentage=0.8", \
-     "-Djava.security.egd=file:/dev/./urandom", \
-     "-jar", "app.jar", \
-     "arg1"]
+ENV JDK_JAVA_OPTIONS="--show-version --enable-preview -XX:+UseCompactObjectHeaders -XX:AOTCache=app.aot -XX:MaxRAMPercentage=0.8"
+CMD ["java", "-jar", "app.jar"]
 
 EXPOSE 80/tcp
 

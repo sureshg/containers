@@ -71,7 +71,7 @@ services:
   #  #   replicas: 1
   #
   db-data:
-    image: openjdk:26-slim
+    image: openjdk:26-ea-slim
     restart: always
     volumes:
       - clickhouse-data:/data/clickhouse/data

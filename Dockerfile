@@ -54,7 +54,7 @@ RUN <<EOT
     # set -o errexit -o nounset -o errtrace -o pipefail
     set -eux
     echo "Building jlink custom image using Java ${JDK_VERSION} for ${TARGETPLATFORM} on ${BUILDPLATFORM}"
-    DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_FRONTEND=noninteractive
     apt -y update
     apt -y upgrade
     apt -y install \

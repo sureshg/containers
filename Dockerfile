@@ -351,7 +351,7 @@ native-image \
     --no-fallback \
     --enable-https \
     --static-nolibc \
-    --install-exit-handlers \
+    --future-defaults=all \
     -O3 \
     -R:MaxHeapSize=32m \
     -march=compatibility \
